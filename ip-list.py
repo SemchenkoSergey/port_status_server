@@ -1,60 +1,76 @@
 #!/usr/bin/env python3
 # coding: utf8
 
-import csv
 import os
+import csv
 import pickle
+import datetime
 
 
-
-def generate_dslams():
+def generate_dslams(files):
     dslams = []
-    with open('список.csv',  encoding='windows-1251') as f:
-        reader = csv.reader(f, delimiter=';')
-        for row in reader:
-            if len(row) < 35:
-                continue
-            elif 'Российская Федерация Гос-во' not in row[2]:
-                continue
-            model = row[4].replace('=', '').replace('"', '')
-            ip = row[6].replace('=', '').replace('"', '')
-            if model == 'Huawei MA 5616':
-                dslams.append((ip, '5616'))
-            elif model == 'Huawei MA 5600':
-                dslams.append((ip, '5600'))
-    with open('dslams', 'bw') as file_dump:
+    for file in files:
+        if file.split('.')[-1] != 'csv':
+            continue        
+        with open(file,  encoding='windows-1251') as f:
+            reader = csv.reader(f, delimiter=';')
+            for row in reader:
+                if len(row) < 35:
+                    continue
+                elif 'Российская Федерация Гос-во' not in row[2]:
+                    continue
+                model = row[4].replace('=', '').replace('"', '')
+                ip = row[6].replace('=', '').replace('"', '')
+                if model == 'Huawei MA 5616':
+                    dslams.append((ip, '5616'))
+                elif model == 'Huawei MA 5600':
+                    dslams.append((ip, '5600'))
+    with open('resources{}dslams.db'.format(os.sep), 'bw') as file_dump:
             pickle.dump(dslams, file_dump)
+
 
 def load_dslams():
     try:
-        with open('dslams', 'br') as file_load:
+        with open('resources{}dslams.db'.format(os.sep), 'br') as file_load:
             return pickle.load(file_load)
     except:
         return []
 
-def get_ip_list(dslams):
+
+def print_ip_list(dslams):
     result = ''
     number = 1
     for dslam in dslams:
         if len(result + dslam[0]) < 239:
             result += dslam[0] + ';'
         else:
-            print('{} строка для формирования отчета: {}\n'.format(number, result))
+            print('{}: {}'.format(number, result))
             result = dslam[0] + ';'
             number += 1
-    print('{} строка для формирования отчета: {}\n'.format(number, result))
-    
+    print('{}: {}\n'.format(number, result))
 
 
+def delete_files(files):
+    for file in files:
+        os.remove(file)
 
 
 def main():
-    generate_dslams()
+    # Просмотр файлов в директории input/ip_list/
+    files = ['input' + os.sep + 'ip_list' + os.sep + x for x in os.listdir('input' + os.sep + 'ip_list')]
+    if len(files) == 0:
+        return    
+    # Обработка файлов
+    print("Обработка файлов: {}\n".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
+    generate_dslams(files)
     dslams = load_dslams()
-    for dslam in dslams:
-        print(dslam)
+    #for dslam in dslams:
+        #print(dslam)
+    #print()
+    print('Наборы ip для формирования отчетов:')
+    print_ip_list(dslams)
     print()
-    get_ip_list(dslams)
+    delete_files(files)
 
 
 if __name__ == '__main__':
