@@ -6,122 +6,51 @@ import re
 import csv
 import datetime
 import MySQLdb
-from resources import Onyma
 from resources import SQL
 from resources import Settings
-from concurrent.futures import ThreadPoolExecutor
 import warnings
 warnings.filterwarnings("ignore")
 
-argus_phone = {}        # 'id из аргуса': 'номер телефона'
-phones = {}             # {'телефон': [(account, onyma_id),...]}
+phones = {}             # {'телефон': {'account_name': '', 'count': кол-во}}
 
 def get_area_code(area):
-    codes = (('БЛАГОДАРНЕНСКИЙ', 'Благодарный', '86549'),
-             ('БУДЕННОВСКИЙ', 'Буденновск', '86559'),
-             ('ГЕОРГИЕВСКИЙ', 'Георгиевск', '87951'),
-             ('СОВЕТСКИЙ', 'Зеленокумск', '86552'),
-             ('ИЗОБИЛЬНЕНСКИЙ', 'Изобильный', '86545'),
-             ('ИПАТОВСКИЙ', 'Ипатово', '86542'),
-             ('МИНЕРАЛОВОДСКИЙ', 'Минеральные Воды', '87922'),
-             ('ШПАКОВСКИЙ', 'Михайловск', '86553'),
-             ('НЕФТЕКУМСКИЙ', 'Нефтекумск', '86558'),
-             ('НОВОАЛЕКСАНДРОВСКИЙ', 'Новоалександровск', '86544'),
-             ('КИРОВСКИЙ', 'Новопавловск', '87938'),
-             ('ПЕТРОВСКИЙ', 'Светлоград', '86547'),
-             ('АЛЕКСАНДРОВСКИЙ', 'Александровское', '86557'),
-             ('АРЗГИРСКИЙ', 'Арзгир', '86560'),
-             ('ГРАЧЕВСКИЙ', 'Грачевка', '86540'),
-             ('АПАНАСЕНКОВСКИЙ', 'Дивное', '86555'),
-             ('ТРУНОВСКИЙ', 'Донское', '86546'),
-             ('КОЧУБЕЕВСКИЙ', 'Кочубеевское', '86550'),
-             ('КРАСНОГВАРДЕЙСКИЙ', 'Красногвардейское', '86541'),
-             ('АНДРОПОВСКИЙ', 'Курсавка', '86556'),
-             ('ЛЕВОКУМСКИЙ', 'Левокумское', '86543'),
-             ('ТУРКМЕНСКИЙ', 'Летняя Ставка', '86565'),
-             ('НОВОСЕЛИЦКИЙ', 'Новоселицкое', '86548'),
-             ('СТЕПНОВСКИЙ', 'Степное', '86563'),
-             ('ПРЕДГОРНЫЙ', 'Ессентукская', '87961'),
-             ('КУРСКИЙ', 'Курская', '87964'),
-             ('Ессентуки', 'Ессентуки', '87934'),
-             ('Железноводск', 'Железноводск', '87932'),
-             ('Кисловодск', 'Кисловодск', '87937'),
-             ('Лермонтов', 'Лермонтов', '87935'),
-             ('Невинномысск', 'Невинномысск', '86554'),
-             ('Пятигорск', 'Пятигорск', '8793'),
-             ('Ставрополь', 'Ставрополь', '8652'))
+    codes = (('Благодарный', '86549'),
+             ('Буденновск', '86559'),
+             ('Георгиевск', '87951'),
+             ('Зеленокумск', '86552'),
+             ('Изобильный', '86545'),
+             ('Ипатово', '86542'),
+             ('Минеральные Воды', '87922'),
+             ('Михайловск', '86553'),
+             ('Нефтекумск', '86558'),
+             ('Новоалександровск', '86544'),
+             ('Новопавловск', '87938'),
+             ('Светлоград', '86547'),
+             ('Александровское', '86557'),
+             ('Арзгир', '86560'),
+             ('Грачевка', '86540'),
+             ('Дивное', '86555'),
+             ('Донское', '86546'),
+             ('Кочубеевское', '86550'),
+             ('Красногвардейское', '86541'),
+             ('Курсавка', '86556'),
+             ('Левокумское', '86543'),
+             ('Летняя Ставка', '86565'),
+             ('Новоселицкое', '86548'),
+             ('Степное', '86563'),
+             ('Ессентукская', '87961'),
+             ('Курская', '87964'),
+             ('Ессентуки', '87934'),
+             ('Железноводск', '87932'),
+             ('Кисловодск', '87937'),
+             ('Лермонтов', '87935'),
+             ('Невинномысск', '86554'),
+             ('Пятигорск', '8793'),
+             ('Ставрополь', '8652'))
     for code in codes:
-        if (code[0].lower() in area.lower()) or (code[1].lower() in area.lower()):
-            return code[2]
+        if (code[0].lower() in area.lower()):
+            return code[1]
     return False
-
-
-def run_define_param(account_list):
-    count_processed = 0
-    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()
-    onyma = Onyma.get_onyma()
-    if onyma is None:
-        return count_processed
-    
-    for account in account_list:
-        account_name = account[0]
-        account_param = Onyma.find_account_param(onyma, account_name)
-        if account_param is False:
-            continue
-        elif account_param == -1:
-            onyma = Onyma.get_onyma()
-            if onyma is None:
-                return count_processed            
-            continue
-        else:
-            bill, dmid, tmid = account_param
-        count_processed += 1
-        options = {'cursor': cursor,
-                   'table_name': 'abon_onyma',
-                   'str1': 'account_name, bill, dmid, tmid',
-                   'str2': '"{}", "{}", "{}", "{}"'.format(account_name, bill, dmid, tmid)}        
-        SQL.insert_table(**options)
-    connect.close()
-    del onyma
-    return count_processed
-
-
-def run_define_speed(account_list):
-    count_processed = 0
-    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()
-    onyma = Onyma.get_onyma()
-    if onyma is None:
-        return count_processed     
-    
-    for account in account_list:
-        account_name = account[0]
-        speed = Onyma.find_account_speed(onyma, account_name)
-        if speed is not False:
-            options = {'cursor': cursor,
-                       'table_name': 'abon_dsl',
-                       'str1': 'tariff = {}'.format(speed),
-                       'str2': 'account_name = "{}"'.format(account_name)}
-            SQL.update_table(**options)
-            count_processed += 1
-    connect.close()
-    del onyma
-    return count_processed
-
-
-def find_phone_account(accounts): 
-    result = []
-    onyma = Onyma.get_onyma()
-    if onyma is None:
-        return None
-    for account in accounts:
-        #print('Поиск {} в Ониме'.format(account[0]))
-        argus_id = Onyma.find_argus_id(onyma, account[1])
-        if argus_id in argus_phone:
-            result.append((account[0], argus_phone[argus_id]))
-            #print('Учетное имя - {}, телефон - {}'.format(result[-1][0], result[-1][1]))
-    return result # [(account_name, phone_number), ...]
 
 
 def argus_files(file_list):
@@ -132,7 +61,6 @@ def argus_files(file_list):
     re_phone = re.compile(r'\((\d+)\)(.+)') # Код, телефон
     re_address = re.compile(r'(.*),\s?(.*),\s?(.*),\s?(.*),\s?кв\.(.*)') # Район, нас. пункт, улица, дом, кв.
     re_board = re.compile(r'.+0.(\d+)') # Board
-    re_onyma = re.compile(r'.+Onyma\s*(\d+)') # Onyma id
     
     # Обработка csv-файлов
     for file in file_list:
@@ -165,10 +93,6 @@ def argus_files(file_list):
                 street = '"{}"'.format(re_address.search(cell_address).group(3))            # улица
                 house_number = '"{}"'.format(re_address.search(cell_address).group(4))      # номер дома
                 apartment_number = '"{}"'.format(re_address.search(cell_address).group(5))  # квартира
-                try:
-                    onyma_equ = re_onyma.search(cell_onyma).group(1)                        # onyma equ
-                except:
-                    onyma_equ = ''
                     
                 # Вставка данных в таблицу
                 options = {'cursor': cursor,
@@ -179,13 +103,11 @@ def argus_files(file_list):
                     SQL.insert_table(**options)
                 except:
                     continue
-                argus_phone[onyma_equ] = phone_number
     connect.close()
  
 def onyma_file(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
-    onyma = True
     
     for file in file_list:
         if file.split('.')[-1] != 'csv':
@@ -207,32 +129,23 @@ def onyma_file(file_list):
                     
                     # Определение учетного имени
                     account_name = '"{}"'.format(row[21])
-                    onyma_id = row[19]
                     if phone_number not in phones:
-                        phones[phone_number] = []
-                    phones[phone_number].append((account_name, onyma_id))
+                        phones[phone_number] = {}
+                        phones[phone_number]['count'] = 1
+                    else:
+                        phones[phone_number]['count'] += 1
+                    phones[phone_number]['account_name'] = account_name
                   
-            for phone in phones:
-                if len(phones[phone]) == 1:
+            for phone_number in phones:
+                if phones[phone_number]['count'] == 1:
+                    #print('{}: {}, {}'.format(phone_number, phones[phone_number]['account_name'], phones[phone_number]['count']))
                     options = {'cursor': cursor,
                                'table_name': 'abon_dsl',
-                               'str1': 'account_name = {}'.format(phones[phone][0][0]),
-                               'str2': 'phone_number = {}'.format(phone)}                    
+                               'str1': 'account_name = {}'.format(phones[phone_number]['account_name']),
+                               'str2': 'phone_number = {}'.format(phone_number)}                    
                     SQL.update_table(**options)
                 else:
-                    if onyma is True:
-                        find_phones = find_phone_account(phones[phone])
-                        if find_phones is None:
-                            onyma = False
-                            continue
-                    else:
-                        continue
-                    for find_phone in find_phones:
-                        options = {'cursor': cursor,
-                                   'table_name': 'abon_dsl',
-                                   'str1': 'account_name = {}'.format(find_phone[0]),
-                                   'str2': 'phone_number = {}'.format(find_phone[1])}
-                        SQL.update_table(**options)
+                    continue
     connect.close()
     
 def delete_files(file_list):
@@ -241,18 +154,17 @@ def delete_files(file_list):
 
     
 def main():
-    # Просмотр файлов в директории in/argus/
-    argus_file_list = ['in' + os.sep + 'argus' + os.sep + x for x in os.listdir('in' + os.sep + 'argus')]
+    # Просмотр файлов в директории input/make_table/argus/
+    argus_file_list = ['input' + os.sep + 'make_table' + os.sep + 'argus' + os.sep + x for x in os.listdir('input' + os.sep + 'make_table' + os.sep + 'argus')]
     
-    # Просмотр файлов в директории in/onyma/
-    onyma_file_list = ['in' + os.sep + 'onyma' + os.sep + x for x in os.listdir('in' + os.sep + 'onyma')]  
+    # Просмотр файлов в директории input/make_table/onyma/
+    onyma_file_list = ['input' + os.sep + 'make_table' + os.sep + 'onyma' + os.sep + x for x in os.listdir('input' + os.sep + 'make_table' + os.sep + 'onyma')]  
     
     if len(argus_file_list) == 0 or len(onyma_file_list) == 0:
         return
     
     print("Начало работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-    SQL.create_abon_dsl(drop=True)
-    SQL.create_abon_onyma(drop=True)    
+    SQL.create_abon_dsl(drop=True) 
     
     # Обработка файлов в директории in/argus/
     argus_files(argus_file_list)
@@ -262,32 +174,6 @@ def main():
     onyma_file(onyma_file_list)
     delete_files(onyma_file_list)
     
-    # Заполнение полей bill, dmid, tmid таблицы abon_onyma
-    options = {'table_name': 'abon_dsl',
-               'str1': 'account_name',
-               'str2': 'account_name IS NOT NULL'}
-    account_list = SQL.get_table_data(**options)
-    if len(account_list) == 0:
-        print('\n!!! Не сформирована таблица abon_dsl !!!\n')
-        return
-    
-    arguments = [account_list[x::Settings.threads_count]  for x in range(0,  Settings.threads_count)]
-    print('Получение данных из Онимы для таблицы abon_onyma...')
-    with ThreadPoolExecutor(max_workers=Settings.threads_count) as executor:
-        result = executor.map(run_define_param, arguments)
-    count = 0
-    for i in result:
-        count += i
-    print('Обработано: {}'.format(count))
-    
-    # Заполнение тарифов в abon_dsl
-    print('Получение данных из Онимы для заполнения тарифов...')
-    with ThreadPoolExecutor(max_workers=Settings.threads_count) as executor:
-        result = executor.map(run_define_speed, arguments)
-    count = 0
-    for i in result:
-        count += i
-    print('Обработано: {}'.format(count))    
     print("Завершение работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     print('---------\n')
     
