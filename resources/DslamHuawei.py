@@ -32,7 +32,7 @@ class DslamHuawei():
             self.version = version.group(1)
         else:
             self.version = '-'
-        self.set_adsl_line_profile()
+        #self.set_adsl_line_profile()
     
     def __del__(self):
         self.tn.close()
@@ -55,10 +55,10 @@ class DslamHuawei():
                     'undo interactive',
                     'idle-timeout {}'.format(timeout),
                     'scroll 512',
-                    'undo alarm output all',
-                    'config',
-                    'undo info-center enable',
-                    'quit']
+                    'undo alarm output all']
+                    #'config',
+                    #'undo info-center enable',
+                    #'quit']
         for command in commands:
             self.write_read_data(command,  short=True)
     
