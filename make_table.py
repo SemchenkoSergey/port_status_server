@@ -11,7 +11,6 @@ from resources import Settings
 import warnings
 warnings.filterwarnings("ignore")
 
-phones = {}             # {'телефон': {'account_name': '', 'count': кол-во}}
 
 def get_area_code(area):
     codes = (('Благодарный', '86549'),
@@ -108,6 +107,8 @@ def argus_files(file_list):
 def onyma_file(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
+    phones = {}             # {'телефон': {'account_name': '', 'count': кол-во}}
+    tv = []                 # Список телефонов с IPTV   
     
     for file in file_list:
         if file.split('.')[-1] != 'csv':
@@ -116,7 +117,7 @@ def onyma_file(file_list):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')                    
             for row in reader:
-                if (row[41] != 'deleted') and (re.search(r'[xA]DSL', row[37])) and (row[23] == 'SSG-подключение'):
+                if (row[41] != 'deleted') and (re.search(r'[xA]DSL', row[37])):
                     area_code = get_area_code(row[1])
                     if area_code is False:
                         continue
@@ -127,14 +128,17 @@ def onyma_file(file_list):
                     else:
                         continue
                     
-                    # Определение учетного имени
-                    account_name = '"{}"'.format(row[21])
-                    if phone_number not in phones:
-                        phones[phone_number] = {}
-                        phones[phone_number]['count'] = 1
-                    else:
-                        phones[phone_number]['count'] += 1
-                    phones[phone_number]['account_name'] = account_name
+                    if row[23] == 'SSG-подключение':
+                        # Определение учетного имени
+                        account_name = '"{}"'.format(row[21])
+                        if phone_number not in phones:
+                            phones[phone_number] = {}
+                            phones[phone_number]['count'] = 1
+                        else:
+                            phones[phone_number]['count'] += 1
+                        phones[phone_number]['account_name'] = account_name
+                    elif row[23] == '[ЮТК] Сервис IPTV':
+                        tv.append(phone_number)
                   
             for phone_number in phones:
                 if phones[phone_number]['count'] == 1:
@@ -144,6 +148,12 @@ def onyma_file(file_list):
                                'str1': 'account_name = {}'.format(phones[phone_number]['account_name']),
                                'str2': 'phone_number = {}'.format(phone_number)}                    
                     SQL.update_table(**options)
+                    if phone_number in tv:
+                        options = {'cursor': cursor,
+                                   'table_name': 'abon_dsl',
+                                   'str1': 'tv = "yes"',
+                                   'str2': 'phone_number = "{}"'.format(phone_number)}
+                        SQL.update_table(**options)                               
                 else:
                     continue
     connect.close()
