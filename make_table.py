@@ -158,8 +158,8 @@ def onyma_file(file_list):
                     continue
     connect.close()
     
-def delete_files(file_list):
-    for file in file_list:
+def delete_files(files):
+    for file in files:
         os.remove(file)
 
     

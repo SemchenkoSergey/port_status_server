@@ -13,6 +13,14 @@ import warnings
 warnings.filterwarnings("ignore")
 
 DslamHuawei.LOGGING = True
+
+
+def load_dslams():
+    try:
+        with open('resources{}dslams.db'.format(os.sep), 'br') as file_load:
+            return pickle.load(file_load)
+    except:
+        return []
     
 def connect_dslam(host):
     #Создание объекта dslam
@@ -77,14 +85,19 @@ def run(arguments):
 
 
 def main():
+    # Загрузка списка DSLAM
+    dslams = load_dslams()
+    if len(dslams) == 0:
+        print('Не найден dslams.db!')
+        return    
     dslam_ok = 0
-    dslam_bad = []    
+    dslam_bad = []
     # Создание таблицы(если еще нет)
     SQL.create_data_dsl()
     
     # Запуск основного кода
     current_time = datetime.datetime.now()
-    arguments = [(current_time, host) for host in Settings.hosts]
+    arguments = [(current_time, host) for host in dslams]
     with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
         results = executor.map(run, arguments)
     
@@ -97,7 +110,7 @@ def main():
             dslam_bad.append(result[1])
      
     print('Время: {}'.format(current_time.strftime('%Y-%m-%d %H:%M')))
-    print('Всего DSLAM: {}'.format(len(Settings.hosts)))
+    print('Всего DSLAM: {}'.format(len(dslams)))
     print('Обработано: {}'.format(dslam_ok))
     print('Необработанные: {}'.format(', '.join(dslam_bad)))
     print('---------\n')
