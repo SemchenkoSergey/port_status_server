@@ -15,8 +15,8 @@ class Session():
     def __init__(self, account_name, hostname, board, port, dtime):
         self.account_name = account_name
         self.hostname = hostname
-        self.board = board
-        self.port = port
+        self.board = int(board)
+        self.port = int(port)
         self.dtime = dtime
         
     def __str__(self):
@@ -58,10 +58,7 @@ def read_files(files):
 def get_current_data():
     result = {}
     # Получение данных из базы данных
-    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()
-    options = {'cursor': cursor,
-               'table_name': 'abon_dsl',
+    options = {'table_name': 'abon_dsl',
                'str1': 'account_name, hostname, board, port',
                'str2': 'account_name IS NOT NULL'}
     accounts = SQL.get_table_data(**options)
@@ -82,15 +79,20 @@ def main():
         return
     print("Начало работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     sessions = read_files(files)
+    
+    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+    cursor = connect.cursor()    
     current_data = get_current_data()
-    for session in sessions: 
-        if (sessions[session].hostname != current_data[session].hostname) or (sessions[session].board != current_data[session].baord) or (sessions[session].port != current_data[session].port):
+    for session in sessions:
+        if session not in current_data:
+            continue
+        if (sessions[session].hostname != current_data[session]['hostname']) or (sessions[session].board != current_data[session]['board']) or (sessions[session].port != current_data[session]['port']):
             options = {'cursor': cursor,
                        'table_name': 'abon_dsl',
-                       'str1': 'hostname = "{}", board = {}, port = {}'.format(sessions[session].hostname, sessions[session].boar, sessions[session].port),
+                       'str1': 'hostname = "{}", board = {}, port = {}'.format(sessions[session].hostname, sessions[session].board, sessions[session].port),
                        'str2': 'account_name = "{}"'.format(session)}
             SQL.update_table(**options)
-            print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_data[session].hostname, current_data[session].baord, current_data[session].port, sessions[session].hostname, sessions[session].board, sessions[session].port))
+            print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_data[session]['hostname'], current_data[session]['board'], current_data[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
     # Удаление файлов в директории
     delete_files(files)
     print("Завершение работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))

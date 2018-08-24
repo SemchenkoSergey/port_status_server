@@ -152,7 +152,7 @@ def onyma_file(file_list):
                         options = {'cursor': cursor,
                                    'table_name': 'abon_dsl',
                                    'str1': 'tv = "yes"',
-                                   'str2': 'phone_number = "{}"'.format(phone_number)}
+                                   'str2': 'phone_number = {}'.format(phone_number)}
                         SQL.update_table(**options)                               
                 else:
                     continue

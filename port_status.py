@@ -5,6 +5,7 @@ import datetime
 import time
 import MySQLdb
 import os
+import pickle
 from resources import Settings
 from resources import DslamHuawei
 from resources import SQL

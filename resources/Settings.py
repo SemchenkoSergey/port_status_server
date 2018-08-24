@@ -15,6 +15,6 @@ days = 35
          
 # Mysql
 db_host = 'localhost'
-db_user = 'inet'
-db_password = 'inet'
-db_name = 'inet'
+db_user = ''
+db_password = ''
+db_name = ''
