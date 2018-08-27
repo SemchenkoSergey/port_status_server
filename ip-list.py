@@ -19,8 +19,12 @@ def generate_dslams(files):
                     continue
                 elif 'Российская Федерация Гос-во' not in row[2]:
                     continue
+                elif 'sklad' in row[5].lower() or 'test' in row[5].lower():
+                    continue
                 model = row[4].replace('=', '').replace('"', '')
                 ip = row[6].replace('=', '').replace('"', '')
+                if ip == '':
+                    continue
                 if model == 'Huawei MA 5616':
                     dslams.append((ip, '5616'))
                 elif model == 'Huawei MA 5600':
@@ -64,8 +68,8 @@ def main():
     print("Обработка файлов: {}\n".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     generate_dslams(files)
     dslams = load_dslams()
-    #for dslam in dslams:
-        #print(dslam)
+    #for idx, dslam in enumerate(dslams):
+        #print('{}: {}'.format(idx, dslam))
     #print()
     print('Наборы ip для формирования отчетов:')
     print_ip_list(dslams)
