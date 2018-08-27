@@ -94,7 +94,7 @@ def main():
             SQL.update_table(**options)
             print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_data[session]['hostname'], current_data[session]['board'], current_data[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
     # Удаление файлов в директории
-    delete_files(files)
+    #delete_files(files)
     print("Завершение работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     print('---------\n')
     
