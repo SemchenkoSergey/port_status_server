@@ -54,12 +54,13 @@ def get_area_code(area):
 
 def argus_files(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()     
+    cursor = connect.cursor()
+    models = ['Huawei MA 5616', 'Huawei MA 5600']
     
     # Подготовка регулярных выражений
-    re_phone = re.compile(r'\((\d+)\)(.+)') # Код, телефон
-    re_address = re.compile(r'(.*),\s?(.*),\s?(.*),\s?(.*),\s?кв\.(.*)') # Район, нас. пункт, улица, дом, кв.
-    re_board = re.compile(r'.+0.(\d+)') # Board
+    re_phone = re.compile(r'\((\d+)\)(.+)')                                 # Код, телефон
+    re_address = re.compile(r'(.*),\s?(.*),\s?(.*),\s?(.*),\s?кв\.(.*)')    # Район, нас. пункт, улица, дом, кв.
+    re_board = re.compile(r'- (\d*\D)?(\d+)')                               # Board
     
     # Обработка csv-файлов
     for file in file_list:
@@ -69,31 +70,36 @@ def argus_files(file_list):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')
             for row in reader:
-                if len(row) < 8:
+                if len(row) < 10:
+                    continue
+                cell_model = row[1].replace('=', '').replace('"', '')
+                if cell_model not in models or 'ADSL' not in row[4]:
                     continue
                 cell_hostname = row[2].replace('=', '').replace('"', '')
                 cell_board = row[4].replace('=', '').replace('"', '')
                 cell_port = row[5].replace('=', '').replace('"', '')
-                cell_phone = row[8].replace('=', '').replace('"', '')
-                cell_address = row[10].replace('=', '').replace('"', '')
-                cell_onyma = row[12].replace('=', '').replace('"', '')
-                cell_type = row[7].replace('=', '').replace('"', '')
-                if cell_type not in ('Телефон', 'Прямой провод') or not re_phone.search(cell_phone) or not re_address.search(cell_address):
-                            continue
+                cell_phone = row[9].replace('=', '').replace('"', '')
+                cell_address = row[6].replace('=', '').replace('"', '')
+                cell_type = row[8].replace('=', '').replace('"', '')
+                if not re_phone.search(cell_phone) or not re_address.search(cell_address):
+                    continue
                 
-                hostname = '"{}"'.format(cell_hostname)                                     # hostname
-                board = re_board.search(cell_board).group(1)                                # board
-                port = cell_port                                                            # port
-                area_code = re_phone.search(cell_phone).group(1)                            # код телефона
-                phone = re_phone.search(cell_phone).group(2)                                # телефон
-                phone_number = '"{}{}"'.format(area_code, phone).replace('ПППП', 'ПП')      # полный номер (код+телефон)
-                area = '"{}"'.format(re_address.search(cell_address).group(1))              # район
-                locality = '"{}"'.format(re_address.search(cell_address).group(2))          # нас. пункт
-                street = '"{}"'.format(re_address.search(cell_address).group(3))            # улица
-                house_number = '"{}"'.format(re_address.search(cell_address).group(4))      # номер дома
-                apartment_number = '"{}"'.format(re_address.search(cell_address).group(5))  # квартира
+                try:
+                    hostname = '"{}"'.format(cell_hostname)                                     # hostname
+                    board = int(re_board.search(cell_board).group(2))                           # board
+                    port = int(cell_port)                                                       # port
+                    area_code = re_phone.search(cell_phone).group(1)                            # код телефона
+                    phone = re_phone.search(cell_phone).group(2)                                # телефон
+                    phone_number = '"{}{}"'.format(area_code, phone).replace('ПППП', 'ПП')      # полный номер (код+телефон)
+                    area = '"{}"'.format(re_address.search(cell_address).group(1))              # район
+                    locality = '"{}"'.format(re_address.search(cell_address).group(2))          # нас. пункт
+                    street = '"{}"'.format(re_address.search(cell_address).group(3))            # улица
+                    house_number = '"{}"'.format(re_address.search(cell_address).group(4))      # номер дома
+                    apartment_number = '"{}"'.format(re_address.search(cell_address).group(5))  # квартира
+                except:
+                    continue
                     
-                # Вставка данных в таблицу
+                # Вставка данных в таблицу             
                 options = {'cursor': cursor,
                            'table_name': 'abon_dsl',
                            'str1': 'phone_number, area, locality, street, house_number, apartment_number, hostname, board, port',
