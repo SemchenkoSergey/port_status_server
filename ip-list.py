@@ -11,8 +11,10 @@ def generate_dslams(files):
     dslams = []
     for file in files:
         if file.split('.')[-1] != 'csv':
-            continue        
+            continue
+        cur_dslams = []
         with open(file,  encoding='windows-1251') as f:
+            print('Обработка {}'.format(file))
             reader = csv.reader(f, delimiter=';')
             for row in reader:
                 if len(row) < 35:
@@ -26,9 +28,11 @@ def generate_dslams(files):
                 if ip == '':
                     continue
                 if model == 'Huawei MA 5616':
-                    dslams.append((ip, '5616'))
+                    cur_dslams.append((ip, '5616'))
                 elif model == 'Huawei MA 5600':
-                    dslams.append((ip, '5600'))
+                    cur_dslams.append((ip, '5600'))
+        print_ip_list(file, cur_dslams)
+        dslams.extend(cur_dslams)
     with open('resources{}dslams.db'.format(os.sep), 'bw') as file_dump:
             pickle.dump(dslams, file_dump)
 
@@ -41,7 +45,10 @@ def load_dslams():
         return []
 
 
-def print_ip_list(dslams):
+def print_ip_list(file, dslams):
+    if len(dslams) == 0:
+        return
+    print('\r\nНаборы ip для формирования отчетов из файла {}:'.format(file))
     result = ''
     number = 1
     for dslam in dslams:
@@ -51,7 +58,7 @@ def print_ip_list(dslams):
             print('{}: {}'.format(number, result))
             result = dslam[0] + ';'
             number += 1
-    print('{}: {}\n'.format(number, result))
+    print('{}: {}\r\n'.format(number, result))
 
 
 def delete_files(files):
@@ -65,16 +72,13 @@ def main():
     if len(files) == 0:
         return    
     # Обработка файлов
-    print("Обработка файлов: {}\n".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
+    print("Обработка файлов: {}\r\n".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     generate_dslams(files)
     dslams = load_dslams()
     #for idx, dslam in enumerate(dslams):
         #print('{}: {}'.format(idx, dslam))
     #print()
-    print('Наборы ip для формирования отчетов:')
-    print_ip_list(dslams)
-    print()
-    delete_files(files)
+    #delete_files(files)
 
 
 if __name__ == '__main__':
