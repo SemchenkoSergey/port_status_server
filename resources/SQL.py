@@ -78,6 +78,15 @@ def create_abon_dsl(drop=False):
         pass
     else:
         cursor.execute('commit')
+    try:
+        command = '''
+         CREATE INDEX idx_account_name ON abon_dsl(account_name)
+        '''
+        cursor.execute(command)
+    except:
+        pass
+    else:
+        cursor.execute('commit')        
     connect.close()
     
     
