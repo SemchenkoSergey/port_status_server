@@ -6,6 +6,7 @@ import time
 import MySQLdb
 import os
 import pickle
+import subprocess
 from resources import Settings
 from resources import DslamHuawei
 from resources import SQL
@@ -27,42 +28,35 @@ def connect_dslam(host):
     #Создание объекта dslam
     ip = host[0]
     model = host[1]
-    for i in range(1, 4):
-        if model == '5600':
-            try:
-                dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login_5600, Settings.password_5600, 20)
-            except:
-                if i == 3:
-                    return None
-                else:
-                    time.sleep(60)
-                    continue
-        elif model == '5616':
-            try:
-                dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login_5616, Settings.password_5616, 20)
-            except:
-                if i == 3:
-                    return None
-                else:
-                    time.sleep(60)
-                    continue
-        else:
+    DEVNULL = os.open(os.devnull, os.O_WRONLY)
+    response = subprocess.call('ping -c 1 {}'.format(ip), shell='True', stdout=DEVNULL, stderr=subprocess.STDOUT)
+    if response != 0:
+        return None
+    if model == '5600':
+        try:
+            dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login_5600, Settings.password_5600, 20)
+        except:
             return None
-        break
+    elif model == '5616':
+        try:
+            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login_5616, Settings.password_5616, 20)
+        except:
+            return None
+    else:
+        return None
     return dslam
 
-def run(arguments):    
+def run(host):    
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
     
-    current_time = arguments[0]
-    host = arguments[1]
     dslam = connect_dslam(host)
     if dslam is None:
         return (0, host[0])
     hostname = dslam.get_info()['hostname']
     ip = dslam.get_info()['ip']
     for board in dslam.boards:
+        current_time = datetime.datetime.now()
         paramConnectBoard = dslam.get_line_operation_board(board)
         if paramConnectBoard == False:
             continue
@@ -98,9 +92,9 @@ def main():
     
     # Запуск основного кода
     current_time = datetime.datetime.now()
-    arguments = [(current_time, host) for host in dslams]
+    #arguments = [(current_time, host) for host in dslams]
     with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
-        results = executor.map(run, arguments)
+        results = executor.map(run, dslams)
     
     for result in results:
         if result is None:
