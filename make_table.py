@@ -73,7 +73,7 @@ def argus_files(file_list):
                 if len(row) < 10:
                     continue
                 cell_model = row[1].replace('=', '').replace('"', '')
-                if cell_model not in models or 'ADSL' not in row[4]:
+                if cell_model not in models or not re.search(r'ADSL.+\(Л\)', row[4]):
                     continue
                 cell_hostname = row[2].replace('=', '').replace('"', '')
                 cell_board = row[4].replace('=', '').replace('"', '')
@@ -97,9 +97,12 @@ def argus_files(file_list):
                     house_number = '"{}"'.format(re_address.search(cell_address).group(4))      # номер дома
                     apartment_number = '"{}"'.format(re_address.search(cell_address).group(5))  # квартира
                 except:
+                    print('except: {}'.format(cell_board))
                     continue
                     
-                # Вставка данных в таблицу             
+                # Вставка данных в таблицу
+                if len(phone_number) > 12:
+                    continue
                 options = {'cursor': cursor,
                            'table_name': 'abon_dsl',
                            'str1': 'phone_number, area, locality, street, house_number, apartment_number, hostname, board, port',
