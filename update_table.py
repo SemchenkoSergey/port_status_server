@@ -89,7 +89,7 @@ def main():
         if (sessions[session].hostname != current_data[session]['hostname']) or (sessions[session].board != current_data[session]['board']) or (sessions[session].port != current_data[session]['port']):
             options = {'cursor': cursor,
                        'table_name': 'abon_dsl',
-                       'str1': 'hostname = "{}", board = {}, port = {}'.format(sessions[session].hostname, sessions[session].board, sessions[session].port),
+                       'str1': 'hostname = "{}", board = {}, port = {}, update = "yes"'.format(sessions[session].hostname, sessions[session].board, sessions[session].port),
                        'str2': 'account_name = "{}"'.format(session)}
             SQL.update_table(**options)
             print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_data[session]['hostname'], current_data[session]['board'], current_data[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
