@@ -70,7 +70,7 @@ def create_abon_dsl(drop=False):
         tariff SMALLINT UNSIGNED,
         account_name VARCHAR(20),
         tv ENUM('yes', 'no') DEFAULT 'no',
-        update ENUM('yes', 'no') DEFAULT 'no',
+        upd ENUM('yes', 'no') DEFAULT 'no',
         timestamp TIMESTAMP,
         CONSTRAINT pk_abon_dsl PRIMARY KEY (phone_number)    
         )'''

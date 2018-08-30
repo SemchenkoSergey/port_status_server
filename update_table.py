@@ -6,6 +6,7 @@ import re
 import csv
 import datetime
 import MySQLdb
+import pickle
 from resources import SQL
 from resources import Settings
 import warnings
@@ -30,10 +31,17 @@ class Session():
 
 
 def read_files(files):
+    try:
+        with open('resources{}session_files.db'.format(os.sep), 'br') as file_load:
+            session_files = pickle.load(file_load)
+    except:
+        session_files = []    
     sessions = {}   # {'account_name': {'hostname': '', 'board': '', 'port': '', 'dtime': ''}}
     re_dslam =  re.compile(r'ST:\s+(.+?) atm 0/(\d+)/0/(\d+)')
     for file in files:
         if file.split('.')[-1] != 'csv':
+            continue
+        if file in session_files:
             continue
         print('Обработка файла {}'.format(file))
         with open(file,  encoding='windows-1251') as f:
@@ -52,6 +60,9 @@ def read_files(files):
                         sessions[account_name] = session
                 else:
                     sessions[account_name] = session
+        session_files.append(file)
+    with open('resources{}session_files.db'.format(os.sep), 'bw') as file_dump:
+            pickle.dump(session_files, file_dump)
     return sessions
 
 
@@ -89,12 +100,12 @@ def main():
         if (sessions[session].hostname != current_data[session]['hostname']) or (sessions[session].board != current_data[session]['board']) or (sessions[session].port != current_data[session]['port']):
             options = {'cursor': cursor,
                        'table_name': 'abon_dsl',
-                       'str1': 'hostname = "{}", board = {}, port = {}, update = "yes"'.format(sessions[session].hostname, sessions[session].board, sessions[session].port),
+                       'str1': 'hostname = "{}", board = {}, port = {}, upd = "yes"'.format(sessions[session].hostname, sessions[session].board, sessions[session].port),
                        'str2': 'account_name = "{}"'.format(session)}
             SQL.update_table(**options)
             print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_data[session]['hostname'], current_data[session]['board'], current_data[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
     # Удаление файлов в директории
-    delete_files(files)
+    #delete_files(files)
     print("Завершение работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     print('---------\n')
     

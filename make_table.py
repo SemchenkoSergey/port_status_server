@@ -6,6 +6,7 @@ import re
 import csv
 import datetime
 import MySQLdb
+import pickle
 from resources import SQL
 from resources import Settings
 import warnings
@@ -118,7 +119,7 @@ def onyma_file(file_list):
     cursor = connect.cursor()
     phones = {}             # {'телефон': {'account_name': '', 'count': кол-во}}
     tv = []                 # Список телефонов с IPTV   
-    
+    # Чтение информации из файлов
     for file in file_list:
         if file.split('.')[-1] != 'csv':
             continue
@@ -148,23 +149,23 @@ def onyma_file(file_list):
                         phones[phone_number]['account_name'] = account_name
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(phone_number)
-                  
-            for phone_number in phones:
-                if phones[phone_number]['count'] == 1:
-                    #print('{}: {}, {}'.format(phone_number, phones[phone_number]['account_name'], phones[phone_number]['count']))
-                    options = {'cursor': cursor,
-                               'table_name': 'abon_dsl',
-                               'str1': 'account_name = {}'.format(phones[phone_number]['account_name']),
-                               'str2': 'phone_number = {}'.format(phone_number)}                    
-                    SQL.update_table(**options)
-                    if phone_number in tv:
-                        options = {'cursor': cursor,
-                                   'table_name': 'abon_dsl',
-                                   'str1': 'tv = "yes"',
-                                   'str2': 'phone_number = {}'.format(phone_number)}
-                        SQL.update_table(**options)                               
-                else:
-                    continue
+    # Занесение в базу данных
+    for phone_number in phones:
+        if phones[phone_number]['count'] == 1:
+            #print('{}: {}, {}'.format(phone_number, phones[phone_number]['account_name'], phones[phone_number]['count']))
+            options = {'cursor': cursor,
+                       'table_name': 'abon_dsl',
+                       'str1': 'account_name = {}'.format(phones[phone_number]['account_name']),
+                       'str2': 'phone_number = {}'.format(phone_number)}                    
+            SQL.update_table(**options)
+            if phone_number in tv:
+                options = {'cursor': cursor,
+                           'table_name': 'abon_dsl',
+                           'str1': 'tv = "yes"',
+                           'str2': 'phone_number = {}'.format(phone_number)}
+                SQL.update_table(**options)                               
+        else:
+            continue
     connect.close()
     
 def delete_files(files):
@@ -193,6 +194,8 @@ def main():
     onyma_file(onyma_file_list)
     delete_files(onyma_file_list)
     
+    with open('resources{}session_files.db'.format(os.sep), 'bw') as file_dump:
+            pickle.dump([], file_dump)
     print("Завершение работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     print('---------\n')
     
