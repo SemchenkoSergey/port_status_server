@@ -8,13 +8,13 @@ login_5616 = ''
 password_5616 = ''
 
 #Количество потоков выполнения
-threads = 5
+threads = 20
 
 #За сколько дней хранить записи
-days = 35
+days = 14
          
 # Mysql
-db_host = 'localhost'
+db_host = ''
 db_user = ''
 db_password = ''
 db_name = ''
