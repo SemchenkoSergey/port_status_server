@@ -1,0 +1,110 @@
+﻿--- Выборка для IPTV (7 дней) --- 
+(вместо Светлоград указывается населенный пункт)
+
+SELECT
+ RIGHT(ad.phone_number, 5) 'Номер тел.',
+ ad.street 'Улица',
+ ad.house_number 'Дом',
+ ad.apartment_number '№ кв.',
+ MIN(dd.max_dw_rate) 'Мин. скор.'
+FROM abon_dsl ad INNER JOIN data_dsl dd
+ ON ad.hostname=dd.hostname
+ AND ad.board=dd.board
+ AND ad.port=dd.port
+WHERE
+ dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY)
+ AND dd.max_dw_rate IS NOT NULL
+ AND ad.tv = 'no'
+ AND ad.locality LIKE '%Светлоград%'
+GROUP BY ad.phone_number
+HAVING MIN(dd.max_dw_rate) > 15000
+ORDER BY ad.street, CAST(ad.house_number AS INT);
+
+
+--- Статистика улицы с прошлого дня ---
+(вместо Светлоград указывается населенный пункт, вместо Уральская указывается улица)
+
+SELECT
+ ad.street 'Улица',
+ ad.house_number 'Дом',
+ ad.apartment_number '№ кв.',
+ RIGHT(ad.phone_number, 5) 'Номер тел.',
+ ad.tariff 'Тариф',
+ ROUND(AVG(dd.max_up_rate)) 'Ср. исх. скор.',
+ ROUND(AVG(dd.max_dw_rate)) 'Ср. вх. скор.'
+FROM abon_dsl ad INNER JOIN data_dsl dd
+ ON ad.hostname=dd.hostname
+ AND ad.board=dd.board
+ AND ad.port=dd.port
+WHERE
+ dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
+ AND ad.locality LIKE '%Светлоград%'
+ AND ad.street LIKE '%Уральская%'
+GROUP BY ad.phone_number
+HAVING
+ AVG(dd.max_up_rate) IS NOT NULL
+ AND AVG(dd.max_dw_rate) IS NOT NULL
+ORDER BY CAST(ad.house_number AS INT), ad.apartment_number;
+
+
+--- Статистика абонента за последние 3 дня ---
+(вместо 8654740169 указывается номер телефона)
+
+SELECT
+ RIGHT(ad.phone_number, 5) 'Номер тел.',
+ dd.max_up_rate 'Макс. исх. скор.',
+ dd.max_dw_rate 'Макс. вх. скор.',
+ dd.up_rate 'Исх. скор.',
+ dd.dw_rate 'Вх. скор.',
+ ad.tariff 'Тариф',
+ dd.datetime 'Дата/Время'
+FROM abon_dsl ad INNER JOIN data_dsl dd
+ ON ad.hostname=dd.hostname
+ AND ad.board=dd.board
+ AND ad.port=dd.port
+WHERE
+ dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
+ AND ad.phone_number = '8654740169'
+ORDER BY dd.datetime;
+
+
+--- Статистика порта за последние 3 дня ---
+(вместо ATS4-DSL2 указывается hostname, board - плата, port - номер порта)
+
+SELECT
+ hostname,
+ board,
+ port,
+ max_up_rate 'Макс. исх. скор.',
+ max_dw_rate 'Макс. вх. скор.',
+ up_rate 'Исх. скор.',
+ dw_rate 'Вх. скор.',
+ datetime 'Дата/Время'
+FROM data_dsl
+WHERE
+ datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
+ AND hostname LIKE '%ATS4-DSL2%'
+ AND board=1
+ AND port=3
+ORDER BY datetime;
+
+
+
+--- Средняя скорость по улицам (3 дня) ---
+(вместо Светлоград указывается населенный пункт)
+SELECT
+ ad.street AS 'Улица',
+ ROUND(AVG(dd.max_up_rate)) AS 'Ср. исх. ск.',
+ ROUND(AVG(dd.max_dw_rate)) AS 'Ср. вх. ск.',
+ count(DISTINCT ad.phone_number) AS 'Кол-во абон.'
+FROM abon_dsl ad INNER JOIN data_dsl dd
+ ON ad.hostname=dd.hostname
+ AND ad.board=dd.board
+ AND ad.port=dd.port
+WHERE
+ dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
+ AND ad.locality LIKE '%Светлоград%'
+GROUP BY ad.street
+HAVING AVG(dd.max_dw_rate) IS NOT NULL
+ORDER BY ad.street;
+
