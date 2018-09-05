@@ -2,7 +2,7 @@
 (вместо Светлоград указывается населенный пункт)
 
 SELECT
- RIGHT(ad.phone_number, 5) 'Номер тел.',
+ phone_number 'Номер тел.',
  ad.street 'Улица',
  ad.house_number 'Дом',
  ad.apartment_number '№ кв.',
@@ -47,16 +47,60 @@ HAVING
 ORDER BY CAST(ad.house_number AS INT), ad.apartment_number;
 
 
---- Статистика абонента за последние 3 дня ---
+--- Статистика абонента по дням (мин., макс., сред. скорость) ---
 (вместо 8654740169 указывается номер телефона)
 
 SELECT
- RIGHT(ad.phone_number, 5) 'Номер тел.',
+ ad.phone_number 'Номер тел.',
+ dd.hostname 'Hostname',
+ dd.board 'Board',
+ dd.port 'Port',
+ MIN(dd.max_dw_rate) 'Мин. вх. скор.',
+ MAX(dd.max_dw_rate) 'Макс. вх. скор.',
+ ROUND(AVG(dd.max_dw_rate)) 'Сред. вх. скор.',
+ CAST(dd.datetime AS DATE) 'Дата'
+FROM abon_dsl ad INNER JOIN data_dsl dd
+ ON ad.hostname=dd.hostname
+ AND ad.board=dd.board
+ AND ad.port=dd.port
+WHERE
+ ad.phone_number = '8654740169'
+ AND ad.valid = 'yes'
+GROUP BY CAST(dd.datetime AS DATE)
+ORDER BY dd.datetime;
+
+
+--- Статистика порта по дням (мин., макс., сред. скорость) ---
+(вместо 'STV-SVET-ATS4-DSL3-H5600' указывается hostname, board - плата, port - номер порта)
+SELECT
+ hostname 'Hostname',
+ board 'Board',
+ port 'Port',
+ MIN(max_dw_rate) 'Мин. вх. скор.',
+ MAX(max_dw_rate) 'Макс. вх. скор.',
+ ROUND(AVG(max_dw_rate)) 'Сред. вх. скор.',
+ CAST(datetime AS DATE) 'Дата'
+FROM data_dsl
+WHERE
+ hostname = 'STV-SVET-ATS4-DSL3-H5600'
+ AND board=1
+ AND port=49
+GROUP BY CAST(datetime AS DATE)
+ORDER BY datetime;
+
+
+--- Статистика абонента за последние 3 дня по часам ---
+(вместо 8654740169 указывается номер телефона)
+
+SELECT
+ ad.phone_number 'Номер тел.',
+ dd.hostname 'Hostname',
+ dd.board 'Board',
+ dd.port 'Port',
  dd.max_up_rate 'Макс. исх. скор.',
  dd.max_dw_rate 'Макс. вх. скор.',
  dd.up_rate 'Исх. скор.',
  dd.dw_rate 'Вх. скор.',
- ad.tariff 'Тариф',
  dd.datetime 'Дата/Время'
 FROM abon_dsl ad INNER JOIN data_dsl dd
  ON ad.hostname=dd.hostname
@@ -68,13 +112,13 @@ WHERE
 ORDER BY dd.datetime;
 
 
---- Статистика порта за последние 3 дня ---
-(вместо ATS4-DSL2 указывается hostname, board - плата, port - номер порта)
+--- Статистика порта за последние 3 дня по часам ---
+(вместо 'STV-SVET-ATS4-DSL3-H5600' указывается hostname, board - плата, port - номер порта)
 
 SELECT
- hostname,
- board,
- port,
+ hostname 'Hostname',
+ board 'Board',
+ port 'Port',
  max_up_rate 'Макс. исх. скор.',
  max_dw_rate 'Макс. вх. скор.',
  up_rate 'Исх. скор.',
@@ -83,28 +127,8 @@ SELECT
 FROM data_dsl
 WHERE
  datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
- AND hostname LIKE '%ATS4-DSL2%'
+ AND hostname = 'STV-SVET-ATS4-DSL3-H5600'
  AND board=1
- AND port=3
+ AND port=49
 ORDER BY datetime;
-
-
-
---- Средняя скорость по улицам (3 дня) ---
-(вместо Светлоград указывается населенный пункт)
-SELECT
- ad.street AS 'Улица',
- ROUND(AVG(dd.max_up_rate)) AS 'Ср. исх. ск.',
- ROUND(AVG(dd.max_dw_rate)) AS 'Ср. вх. ск.',
- count(DISTINCT ad.phone_number) AS 'Кол-во абон.'
-FROM abon_dsl ad INNER JOIN data_dsl dd
- ON ad.hostname=dd.hostname
- AND ad.board=dd.board
- AND ad.port=dd.port
-WHERE
- dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
- AND ad.locality LIKE '%Светлоград%'
-GROUP BY ad.street
-HAVING AVG(dd.max_dw_rate) IS NOT NULL
-ORDER BY ad.street;
 
