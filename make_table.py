@@ -60,7 +60,6 @@ def argus_files(file_list):
     
     # Подготовка регулярных выражений
     re_phone = re.compile(r'\((\d+)\)(.+)')                                 # Код, телефон
-    re_address = re.compile(r'(.*),\s?(.*),\s?(.*),\s?(.*),\s?кв\.(.*)')    # Район, нас. пункт, улица, дом, кв.
     re_board = re.compile(r'- (\d*\D)?(\d+)')                               # Board
     
     # Обработка csv-файлов
@@ -82,26 +81,37 @@ def argus_files(file_list):
                 cell_phone = row[9].replace('=', '').replace('"', '')
                 cell_address = row[6].replace('=', '').replace('"', '')
                 cell_type = row[8].replace('=', '').replace('"', '')
-                if not re_phone.search(cell_phone) or not re_address.search(cell_address):
+                if not re_phone.search(cell_phone) or cell_address == '':
                     continue
-                
+
                 try:
-                    hostname = '"{}"'.format(cell_hostname)                                     # hostname
-                    board = int(re_board.search(cell_board).group(2))                           # board
-                    port = int(cell_port)                                                       # port
-                    area_code = re_phone.search(cell_phone).group(1)                            # код телефона
-                    phone = re_phone.search(cell_phone).group(2)                                # телефон
-                    phone_number = '"{}{}"'.format(area_code, phone).replace('ПППП', 'ПП')      # полный номер (код+телефон)
-                    area = '"{}"'.format(re_address.search(cell_address).group(1))              # район
-                    locality = '"{}"'.format(re_address.search(cell_address).group(2))          # нас. пункт
-                    street = '"{}"'.format(re_address.search(cell_address).group(3))            # улица
-                    house_number = '"{}"'.format(re_address.search(cell_address).group(4))      # номер дома
-                    apartment_number = '"{}"'.format(re_address.search(cell_address).group(5))  # квартира
-                except:
-                    print('except: {}'.format(cell_board))
+                    hostname = '"{}"'.format(cell_hostname)                                                                                         # hostname
+                    board = int(re_board.search(cell_board).group(2))                                                                               # board
+                    port = int(cell_port)                                                                                                           # port
+                    area_code = re_phone.search(cell_phone).group(1)                                                                                # код телефона
+                    phone = re_phone.search(cell_phone).group(2)                                                                                    # телефон
+                    phone_number = '"{}{}"'.format(area_code, phone).replace('ПППП', 'ПП')                                                          # полный номер (код+телефон)
+                    if re.search(r'.*р-н', cell_address):                                                                                           # в адресе есть район
+                        area = '"{}"'.format(re.search(r'.*р-н', cell_address).group(0))                                                            # район
+                        locality = '"{}"'.format(re.search(r'р-н, (.*?),', cell_address).group(1))                                                  # нас. пункт                    
+                    elif re.search(r'.+\sг\.,\s+(.+\s(?:п|г|с|х|ст-ца|аул)?\.?),', cell_address):                                                   # в адресе есть город, затем еще город, село, поселок, хутор и т.д.
+                        area = '"{}"'.format(re.search(r'^(.+\sг\.),', cell_address).group(1))                                                      # район
+                        locality = '"{}"'.format(re.search(r'.+\sг\.,\s+(.+\s(?:п|г|с|х|ст-ца|аул)?\.?),', cell_address).group(1))                  # нас. пункт
+                    elif re.search(r'^(.+\sг\.),', cell_address):                                                                                   # адрес начинается с города
+                        area = '"{}"'.format(re.search(r'^(.+\sг\.),', cell_address).group(1))                                                      # район
+                        locality = area                                                                                                             # нас. пункт
+                    street = '"{}"'.format(re.search(r'(?:.+(?:п|г|с|х|ст-ца|аул|аул)?\.?),\s+(.+?),\s+(?:.+),\s?кв\.', cell_address).group(1))     # улица
+                    house_number = '"{}"'.format(re.search(r'(\S+?)\s*,кв', cell_address).group(1))                                                 # дом
+                    apartment_number = '"{}"'.format(re.search(r'кв.\s?(.*)', cell_address).group(1))                                               # квартира
+                except Exception as ex:
+                    #print('-------------------------------')
+                    #print(ex)
+                    #print(cell_address)
+                    #print(cell_phone)
                     continue
                     
-                # Вставка данных в таблицу
+                #print( '{}, {}, {}, {}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number, hostname, board, port))
+                ## Вставка данных в таблицу
                 if len(phone_number) > 12:
                     continue
                 options = {'cursor': cursor,
