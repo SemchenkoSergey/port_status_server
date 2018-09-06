@@ -3,10 +3,12 @@
 
 SELECT
  phone_number 'Номер тел.',
+ ad.locality 'Нас. пункт',
  ad.street 'Улица',
  ad.house_number 'Дом',
  ad.apartment_number '№ кв.',
- MIN(dd.max_dw_rate) 'Мин. скор.'
+ MIN(dd.max_dw_rate) 'Мин. вх. скор.',
+ MAX(dd.max_dw_rate) 'Макс. вх. скор.'
 FROM abon_dsl ad INNER JOIN data_dsl dd
  ON ad.hostname=dd.hostname
  AND ad.board=dd.board
@@ -29,7 +31,6 @@ SELECT
  ad.house_number 'Дом',
  ad.apartment_number '№ кв.',
  RIGHT(ad.phone_number, 5) 'Номер тел.',
- ad.tariff 'Тариф',
  ROUND(AVG(dd.max_up_rate)) 'Ср. исх. скор.',
  ROUND(AVG(dd.max_dw_rate)) 'Ср. вх. скор.'
 FROM abon_dsl ad INNER JOIN data_dsl dd

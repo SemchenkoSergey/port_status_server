@@ -83,7 +83,7 @@ Onyma:
  'Список подключений' 	в директорию 'input\make_table\onyma'
 Argus:
  'Услуги по региону' 	в директорию 'input\make_table\argus'
- 'Список DSLAM' 	в директорию 'input\ip_list'
+ 'Список DSLAM' 		в директорию 'input\ip_list'
 
 
 Использование базы данных:
