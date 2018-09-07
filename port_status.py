@@ -34,12 +34,12 @@ def connect_dslam(host):
         return None
     if model == '5600':
         try:
-            dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login_5600, Settings.password_5600, 20)
+            dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login, Settings.password, 20)
         except:
             return None
     elif model == '5616':
         try:
-            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login_5616, Settings.password_5616, 20)
+            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login, Settings.password, 20)
         except:
             return None
     else:
