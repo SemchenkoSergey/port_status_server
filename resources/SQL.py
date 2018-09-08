@@ -67,7 +67,6 @@ def create_abon_dsl(drop=False):
         hostname VARCHAR(50),
         board TINYINT UNSIGNED,
         port TINYINT UNSIGNED,
-        tariff SMALLINT UNSIGNED,
         account_name VARCHAR(20),
         tv ENUM('yes', 'no') DEFAULT 'no',
         valid ENUM('yes', 'no') DEFAULT 'no',
