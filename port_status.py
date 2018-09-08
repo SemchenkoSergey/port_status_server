@@ -29,7 +29,7 @@ def connect_dslam(host):
     ip = host[0]
     model = host[1]
     DEVNULL = os.open(os.devnull, os.O_WRONLY)
-    response = subprocess.call('ping -c 1 {}'.format(ip), shell='True', stdout=DEVNULL, stderr=subprocess.STDOUT)
+    response = subprocess.call('ping -c 3 {}'.format(ip), shell='True', stdout=DEVNULL, stderr=subprocess.STDOUT)
     if response != 0:
         return None
     if model == '5600':
