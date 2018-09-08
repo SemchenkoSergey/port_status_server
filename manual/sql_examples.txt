@@ -21,7 +21,7 @@ WHERE
  AND ad.locality LIKE '%Светлоград%'
 GROUP BY ad.phone_number
 HAVING MIN(dd.max_dw_rate) > 15000
-ORDER BY ad.street, CAST(ad.house_number AS INT);
+ORDER BY ad.street, CAST(ad.house_number AS SIGNED);
 
 
 --- Статистика улицы с прошлого дня ---
@@ -47,7 +47,7 @@ GROUP BY ad.phone_number
 HAVING
  AVG(dd.max_up_rate) IS NOT NULL
  AND AVG(dd.max_dw_rate) IS NOT NULL
-ORDER BY CAST(ad.house_number AS INT), ad.apartment_number;
+ORDER BY CAST(ad.house_number SIGNED)), ad.apartment_number;
 
 
 --- Статистика абонента по дням (мин., макс., сред. скорость) ---
