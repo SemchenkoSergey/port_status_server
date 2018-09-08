@@ -6,7 +6,14 @@ import csv
 import pickle
 import datetime
 import subprocess
+from resources import Settings
+from resources import DslamHuawei
+from concurrent.futures import ThreadPoolExecutor
+import warnings
 
+warnings.filterwarnings("ignore")
+
+DslamHuawei.LOGGING = True
 
 def generate_dslams(files):
     dslams = []
@@ -45,7 +52,7 @@ def load_dslams():
 
 
 def test_dslam(dslam, out):
-    response = subprocess.call('ping -c 1 {}'.format(dslam[0]), shell='True', stdout=out, stderr=subprocess.STDOUT)
+    response = subprocess.call('ping -c 3 {}'.format(dslam[0]), shell='True', stdout=out, stderr=subprocess.STDOUT)
     if response == 0:
         return True
     else:
@@ -75,6 +82,26 @@ def connect_dslam(host, default=False):
         return None
     return dslam
 
+def test_username(arguments):
+    # Проверка логина/пароля на DSLAM
+    host = arguments[0]
+    out = arguments[1]
+    if not test_dslam(host, out):
+        return (host[0], '', '')
+    dslam = connect_dslam(host)
+    if dslam is None:
+        dslam = connect_dslam(host, default=True)
+        if dslam is None:
+            return ('', host[0], '')
+        else:
+            result = dslam.add_user('script_profile', '', '')
+            if result:
+                del dslam
+                return ('', '', host[0])
+            else:
+                print('Не удалось создать юзера на {}'.format(dslam[0]))
+                del dslam
+
 
 def delete_files(files):
     for file in files:
@@ -103,28 +130,23 @@ def main():
     dslam_wrong_log_pass = []
     dslam_change = []
     dslams = load_dslams()
-    for dslam in dslams:
-        if not test_dslam(dslam, DEVNULL):
-            dslam_unavailable.append(dslam[0])
-            continue
-        obj_dslam = connect_dslam(dslam)
-        if obj_dslam is None:
-            obj_dslam = connect_dslam(dslam, default=True)
-            if obj_dslam is None:
-                dslam_wrong_log_pass.append(dslam[0])
-                continue
-            else:
-                result = dslam.add_user('script_profile', 'script_user', 'script1password')
-                if result:
-                    dslam_change.append(dslam[0])
-                    del dslam
-                else:
-                    print('Не удалось создать юзера на {}'.format(dslam[0]))
-                    del dslam
+    arguments = [(host, DEVNULL) for host in dslams]
+    with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
+        results = executor.map(test_username, arguments)    
     
-    print('Добавлен User: {}'.format(', '.join(dslam_change)))
-    print('Не проходит стандартный log/pass: {}'.format(', '.join(dslam_wrong_log_pass)))
-    print('Не доступные DSLAM: {}'.format(', '.join(dslam_unavailable)))
+    for result in results:
+        if result is None:
+            continue
+        if result[0] != '':
+            dslam_unavailable.append(result[0])
+        elif result[1] != '':
+            dslam_wrong_log_pass.append(result[1])
+        elif result[2] != '':
+            dslam_change.append(result[2])
+    
+    print('Добавлен User - {}: {}'.format(len(dslam_change), ', '.join(dslam_change)))
+    print('Не проходит стандартный log/pass - {}: {}'.format(len(dslam_wrong_log_pass), ', '.join(dslam_wrong_log_pass)))
+    print('Не доступные DSLAM - {}: {}'.format(len(dslam_unavailable), ', '.join(dslam_unavailable)))
 
 if __name__ == '__main__':
     cur_dir = os.sep.join(os.path.abspath(__file__).split(os.sep)[:-1])
