@@ -34,6 +34,8 @@ FLUSH PRIVILEGES;
 Создание таблицы для работы программы
 CREATE DATABASE adsl CHARACTER SET utf8;
 
+SET GLOBAL sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''));
+
 Выход
 exit
 
