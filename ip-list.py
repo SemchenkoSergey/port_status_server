@@ -99,7 +99,7 @@ def test_username(arguments):
                 del dslam
                 return ('', '', host[0])
             else:
-                print('Не удалось создать юзера на {}'.format(dslam[0]))
+                print('Не удалось создать юзера на {}'.format(host[0]))
                 del dslam
 
 
