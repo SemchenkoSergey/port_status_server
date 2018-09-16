@@ -186,11 +186,12 @@ def insert_table(cursor, table_name, str1, str2):
     ({})
     '''.format(table_name, str1, str2)
     try:
-        cursor.execute(command)
+        result = cursor.execute(command)
     except Exception as ex:
         print(ex)
     else:
         cursor.execute('commit')
+        return result
         
 
 def update_table(cursor, table_name, str1, str2):
@@ -200,8 +201,9 @@ def update_table(cursor, table_name, str1, str2):
     WHERE {}
     '''.format(table_name, str1, str2)
     try:
-        cursor.execute(command)
+        result = cursor.execute(command)
     except Exception as ex:
         print(ex)
     else:
         cursor.execute('commit')
+        return result
