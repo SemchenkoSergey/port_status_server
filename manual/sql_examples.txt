@@ -8,7 +8,10 @@ SELECT
  ad.house_number 'Дом',
  ad.apartment_number '№ кв.',
  MIN(dd.max_dw_rate) 'Мин. вх. скор.',
- MAX(dd.max_dw_rate) 'Макс. вх. скор.'
+ MAX(dd.max_dw_rate) 'Макс. вх. скор.',
+ dd.hostname 'Hostname',
+ dd.board 'Board',
+ dd.port 'Port' 
 FROM abon_dsl ad INNER JOIN data_dsl dd
  ON ad.hostname=dd.hostname
  AND ad.board=dd.board
