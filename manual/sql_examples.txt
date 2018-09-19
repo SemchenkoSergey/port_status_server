@@ -50,7 +50,7 @@ GROUP BY ad.phone_number
 HAVING
  AVG(dd.max_up_rate) IS NOT NULL
  AND AVG(dd.max_dw_rate) IS NOT NULL
-ORDER BY CAST(ad.house_number SIGNED)), ad.apartment_number;
+ORDER BY CAST(ad.house_number AS SIGNED), ad.apartment_number;
 
 
 --- Статистика абонента по дням (мин., макс., сред. скорость) ---
