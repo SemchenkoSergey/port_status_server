@@ -80,6 +80,7 @@ def run(host):
 
 
 def main():
+    print('Время запуска: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     # Загрузка списка DSLAM
     dslams = load_dslams()
     if len(dslams) == 0:
@@ -89,9 +90,8 @@ def main():
     dslam_bad = []
     # Создание таблицы(если еще нет)
     SQL.create_data_dsl()
-    
     # Запуск основного кода
-    current_time = datetime.datetime.now()
+    #current_time = datetime.datetime.now()
     #arguments = [(current_time, host) for host in dslams]
     with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
         results = executor.map(run, dslams)
@@ -104,7 +104,7 @@ def main():
         else:
             dslam_bad.append(result[1])
      
-    print('Время: {}'.format(current_time.strftime('%Y-%m-%d %H:%M')))
+    print('Время окончания: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     print('Всего DSLAM: {}'.format(len(dslams)))
     print('Обработано: {}'.format(dslam_ok))
     print('Необработанные: {}'.format(', '.join(dslam_bad)))
