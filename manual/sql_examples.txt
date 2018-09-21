@@ -34,7 +34,7 @@ SELECT
  ad.street 'Улица',
  ad.house_number 'Дом',
  ad.apartment_number '№ кв.',
- RIGHT(ad.phone_number, 5) 'Номер тел.',
+ ad.phone_number 'Номер тел.',
  ROUND(AVG(dd.max_up_rate)) 'Ср. исх. скор.',
  ROUND(AVG(dd.max_dw_rate)) 'Ср. вх. скор.'
 FROM abon_dsl ad INNER JOIN data_dsl dd
