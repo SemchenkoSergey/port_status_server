@@ -52,7 +52,7 @@ def run(host):
     
     dslam = connect_dslam(host)
     if dslam is None:
-        return (0, host[0])
+        return (0, host)
     hostname = dslam.get_info()['hostname']
     ip = dslam.get_info()['ip']
     for board in dslam.boards:
@@ -76,7 +76,7 @@ def run(host):
             SQL.insert_table(**options)
     connect.close()
     del dslam
-    return (1, host[0])
+    return (1, host)
 
 
 def main():
@@ -87,6 +87,7 @@ def main():
         print('Не найден dslams.db!')
         return    
     dslam_ok = 0
+    dslam_repeat = []
     dslam_bad = []
     # Создание таблицы(если еще нет)
     SQL.create_data_dsl()
@@ -102,8 +103,28 @@ def main():
         elif result[0] == 1:
             dslam_ok += 1
         else:
-            dslam_bad.append(result[1])
-     
+            dslam_repeat.append(result[1])
+    if len(dslam_repeat) > 0:
+        print('Пауза 5 мин, и повторная обработка DSLAM:')
+        for dslam in dslam_repeat:
+            print(dslam[0])
+        print()
+        # Задержка
+        time.sleep(60 * 5)
+        
+        # Повторная обработка DSLAM
+        with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
+            results = executor.map(run, dslam_repeat)
+        
+        for result in results:
+            if result is None:
+                continue
+            elif result[0] == 1:
+                dslam_ok += 1
+            else:
+                dslam_bad.append(result[1][0])    
+    
+    # Распечатка результатов
     print('Время окончания: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     print('Всего DSLAM: {}'.format(len(dslams)))
     print('Обработано: {}'.format(dslam_ok))
