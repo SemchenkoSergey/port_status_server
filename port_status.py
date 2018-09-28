@@ -31,16 +31,19 @@ def connect_dslam(host):
     DEVNULL = os.open(os.devnull, os.O_WRONLY)
     response = subprocess.call('ping -c 3 {}'.format(ip), shell='True', stdout=DEVNULL, stderr=subprocess.STDOUT)
     if response != 0:
+        print('{} не доступен'.format(ip))
         return None
     if model == '5600':
         try:
             dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login, Settings.password, 20)
         except:
+            print('{} не удалось подключиться'.format(ip))
             return None
     elif model == '5616':
         try:
             dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login, Settings.password, 20)
         except:
+            print('{} не удалось подключиться'.format(ip))
             return None
     else:
         return None
