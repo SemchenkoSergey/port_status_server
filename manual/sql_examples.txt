@@ -31,6 +31,7 @@ ORDER BY ad.street, CAST(ad.house_number AS SIGNED);
 (вместо Светлоград указывается населенный пункт, вместо Уральская указывается улица)
 
 SELECT
+ ad.locality 'Нас. пункт',
  ad.street 'Улица',
  ad.house_number 'Дом',
  ad.apartment_number '№ кв.',
