@@ -20,7 +20,7 @@ class DslamHuawei():
             self.version = version.group(1)
         else:
             self.version = '-'
-        self.set_adsl_line_profile()
+        #self.set_adsl_line_profile()
     
     def __del__(self):
         self.tn.close()
