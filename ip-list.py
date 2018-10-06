@@ -97,7 +97,7 @@ def test_username(arguments):
             dslam.execute_command('config', short=True)
             dslam.execute_command('pitp enable pmode', short=True)
             dslam.execute_command('quit', short=True)
-            result = dslam.add_user('script_profile', 'script_user', 'script1password')
+            result = dslam.add_user('script_profile', Settings.login, Settings.password)
             if result:
                 del dslam
                 return ('', '', host[0])
