@@ -50,46 +50,6 @@ def create_data_dsl(drop=False):
     connect.close()    
 
 
-def create_abon_dsl(drop=False):
-    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()
-    try:
-        if drop:
-            cursor.execute('DROP TABLE IF EXISTS abon_dsl')
-        table = '''
-        CREATE TABLE IF NOT EXISTS abon_dsl (
-        phone_number CHAR(10) NOT NULL,
-        area VARCHAR(30),
-        locality VARCHAR(30),
-        street VARCHAR(30),
-        house_number VARCHAR(10),
-        apartment_number VARCHAR(10),
-        hostname VARCHAR(50),
-        board TINYINT UNSIGNED,
-        port TINYINT UNSIGNED,
-        account_name VARCHAR(20),
-        tv ENUM('yes', 'no') DEFAULT 'no',
-        valid ENUM('yes', 'no') DEFAULT 'no',
-        timestamp TIMESTAMP,
-        CONSTRAINT pk_abon_dsl PRIMARY KEY (phone_number)    
-        )'''
-        cursor.execute(table)
-    except:
-        pass
-    else:
-        cursor.execute('commit')
-    try:
-        command = '''
-         CREATE INDEX idx_account_name ON abon_dsl(account_name)
-        '''
-        cursor.execute(command)
-    except:
-        pass
-    else:
-        cursor.execute('commit')        
-    connect.close()
-    
-    
 def create_abon_onyma(drop=False):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
@@ -131,6 +91,31 @@ def create_abon_onyma(drop=False):
         pass
     else:
         cursor.execute('commit')    
+    connect.close()
+
+
+def create_abon_argus(drop=False):
+    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+    cursor = connect.cursor()
+    try:
+        if drop:
+            cursor.execute('DROP TABLE IF EXISTS abon_argus')
+        table = '''
+        CREATE TABLE IF NOT EXISTS abon_argus (
+        phone_number CHAR(10) NOT NULL,
+        area VARCHAR(30),
+        locality VARCHAR(30),
+        street VARCHAR(30),
+        house_number VARCHAR(10),
+        apartment_number VARCHAR(10),
+        timestamp TIMESTAMP,
+        CONSTRAINT pk_abon_dsl PRIMARY KEY (phone_number)    
+        )'''
+        cursor.execute(table)
+    except:
+        pass
+    else:
+        cursor.execute('commit')     
     connect.close()
     
     
