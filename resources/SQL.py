@@ -98,6 +98,46 @@ def create_abon_onyma(drop=False):
             cursor.execute('DROP TABLE IF EXISTS abon_onyma')
         table = '''
         CREATE TABLE IF NOT EXISTS abon_onyma (
+        account_name VARCHAR(20),
+        contract VARCHAR(20),
+        phone_number CHAR(10) NOT NULL,
+        hostname VARCHAR(50),
+        board TINYINT UNSIGNED,
+        port TINYINT UNSIGNED,
+        mac_address CHAR(12),
+        tv ENUM('yes', 'no') DEFAULT 'no',
+        datetime DATETIME NOT NULL,
+        CONSTRAINT pk_abon_dsl PRIMARY KEY (account_name)
+        )'''
+        cursor.execute(table)
+    except:
+        pass
+    else:
+        cursor.execute('commit')
+    try:
+        command = '''
+         CREATE INDEX idx_phone_number ON abon_onyma(phone_number)
+        '''
+        cursor.execute(command)
+        command = '''
+        CREATE INDEX idx_contract ON abon_onyma(contract)
+        '''
+        cursor.execute(command)        
+    except:
+        pass
+    else:
+        cursor.execute('commit')        
+    connect.close()
+    
+    
+def create_abon_onyma(drop=False):
+    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+    cursor = connect.cursor()
+    try:
+        if drop:
+            cursor.execute('DROP TABLE IF EXISTS abon_onyma')
+        table = '''
+        CREATE TABLE IF NOT EXISTS abon_onyma (
         account_name VARCHAR(20) NOT NULL,
         bill VARCHAR(15) NOT NULL,
         dmid VARCHAR(15) NOT NULL,
