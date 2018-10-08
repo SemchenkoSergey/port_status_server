@@ -14,9 +14,8 @@ warnings.filterwarnings("ignore")
 
 
 class Session():
-    def __init__(self, account_name, contract, hostname, board, port, mac_address, dtime):
+    def __init__(self, account_name, hostname, board, port, mac_address, dtime):
         self.account_name = account_name
-        self.contract = contract
         self.hostname = hostname
         self.board = int(board)
         self.port = int(port)
@@ -24,7 +23,7 @@ class Session():
         self.dtime = dtime
         
     def __str__(self):
-        return '{}({}):\n{}\n{}\n{}\n{}\n'.format(self.account_name, self.contract, self.hostname, self.board, self.port, self.mac_address)
+        return '{}({}):\n{}\n{}\n{}\n'.format(self.account_name, self.hostname, self.board, self.port, self.mac_address)
         
     def __gt__(self, other):
         return self.dtime > other.dtime
@@ -33,20 +32,20 @@ class Session():
         return self.dtime < other.dtime
 
 
-def read_sessions_files(files):
-    #try:
-        #with open('resources{}session_files.db'.format(os.sep), 'br') as file_load:
-            #session_files = pickle.load(file_load)
-    #except:
-        #session_files = []    
-    sessions = {}   # {'account_name': {'contract': '', 'hostname': '', 'board': '', 'port': '',  'mac_address': '', 'dtime': ''}}
+def parsing_update_abon_onyma(files):
+    try:
+        with open('resources{}session_files.db'.format(os.sep), 'br') as file_load:
+            session_files = pickle.load(file_load)
+    except:
+        session_files = []    
+    sessions = {}   # {'account_name': {'hostname': '', 'board': '', 'port': '',  'mac_address': '', 'dtime': ''}}
     re_dslam =  re.compile(r'ST:\s+(.+?) atm 0/(\d+)/0/(\d+)')
     re_mac_address = re.compile(r'MAC:\s+(.+?)\s')
     for file in files:
         if  'Абонентские сессии' not in file or file.split('.')[-1] != 'csv':
             continue
-        #if file in session_files:
-            #continue
+        if file in session_files:
+            continue
         print('Обработка файла {}'.format(file))
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader((line.replace('\0','') for line in f), delimiter=';')
@@ -54,23 +53,33 @@ def read_sessions_files(files):
                 if row[11] != 'DSL' or not re_dslam.search(row[6]):
                     continue
                 account_name = row[5]
-                contract = row[4]
                 hostname = re_dslam.search(row[6]).group(1)
                 board = re_dslam.search(row[6]).group(2)
                 port = re_dslam.search(row[6]).group(3)
                 mac_address = re_mac_address.search(row[6]).group(1).replace('.', '')
                 dtime =  datetime.datetime.strptime(row[0], '%d.%m.%Y %H:%M:%S')
-                session = Session(account_name, contract, hostname, board, port, mac_address, dtime)
+                session = Session(account_name, hostname, board, port, mac_address, dtime)
                 if account_name in sessions:
                     if session > sessions[account_name]:
                         sessions[account_name] = session
                 else:
                     sessions[account_name] = session
 
-        #session_files.append(file)
-    #with open('resources{}session_files.db'.format(os.sep), 'bw') as file_dump:
-            #pickle.dump(session_files, file_dump)
-    #return sessions
+        session_files.append(file)
+    with open('resources{}session_files.db'.format(os.sep), 'bw') as file_dump:
+            pickle.dump(session_files, file_dump)
+    return sessions
+
+def get_current_ports():
+    result = {}
+    # Получение данных из базы данных
+    options = {'table_name': 'abon_onyma',
+               'str1': 'account_name, hostname, board, port',
+               'str2': 'account_name IS NOT NULL'}
+    accounts = SQL.get_table_data(**options)
+    for account in accounts:
+        result[account[0]] = {'hostname': account[1], 'board': account[2], 'port': account[3]}
+    return result    
 
 
 def get_area_code(area):
@@ -184,20 +193,21 @@ def argus_files(file_list):
                     continue
     connect.close()
  
-def onyma_file(file_list):
+def parsing_make_abon_onyma(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
-    phones = {}             # {'телефон': {'account_name': '', 'count': кол-во}}
+    phones = {}             # {'телефон': {'accounts': [], 'count': кол-во}}
     tv = []                 # Список телефонов с IPTV   
     # Чтение информации из файлов
     for file in file_list:
-        if file.split('.')[-1] != 'csv':
+        if (file.split('.')[-1] != 'csv') or ('Список подключений ШПД + ТВ' not in file):
             continue
         print('Обработка файла {}'.format(file))
+        row_num = 0
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')                    
             for row in reader:
-                if (row[41] != 'deleted') and (re.search(r'[xA]DSL', row[37])):
+                if (row[41] != 'deleted') and (re.search(r'[xA]DSL', row[36])):
                     area_code = get_area_code(row[1])
                     if area_code is False:
                         continue
@@ -213,37 +223,70 @@ def onyma_file(file_list):
                         account_name = '"{}"'.format(row[21])
                         if phone_number not in phones:
                             phones[phone_number] = {}
-                            phones[phone_number]['count'] = 1
-                        else:
-                            phones[phone_number]['count'] += 1
-                        phones[phone_number]['account_name'] = account_name
+                            phones[phone_number]['accounts'] = []
+                            phones[phone_number]['servis_point'] = '"{}"'.format(row[1])
+                            phones[phone_number]['contract'] = '"{}"'.format(row[3])
+                        phones[phone_number]['accounts'].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'"))})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(phone_number)
     # Занесение в базу данных
     for phone_number in phones:
-        if phones[phone_number]['count'] == 1:
-            #print('{}: {}, {}'.format(phone_number, phones[phone_number]['account_name'], phones[phone_number]['count']))
-            options = {'cursor': cursor,
-                       'table_name': 'abon_dsl',
-                       'str1': 'account_name = {}'.format(phones[phone_number]['account_name']),
-                       'str2': 'phone_number = {}'.format(phone_number)}                    
-            SQL.update_table(**options)
-            if phone_number in tv:
+        servis_point = phones[phone_number]['servis_point']
+        contract = phones[phone_number]['contract']
+        #print('{}: {}, {}'.format(phone_number, phones[phone_number]['accounts'], phones[phone_number]['count']))
+        for account in phones[phone_number]['accounts']:
+            account_name = account['account_name']
+            tariff = account['tariff']
+            address = account['address']
+            if len(phones[phone_number]['accounts']) == 1:
                 options = {'cursor': cursor,
-                           'table_name': 'abon_dsl',
-                           'str1': 'tv = "yes"',
-                           'str2': 'phone_number = {}'.format(phone_number)}
-                SQL.update_table(**options)                               
-        else:
-            continue
+                           'table_name': 'abon_onyma',
+                           'str1': 'account_name, phone_number, contract, servis_point, address, tariff',
+                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, phone_number, contract, servis_point, address, tariff)}
+            else:
+                options = {'cursor': cursor,
+                           'table_name': 'abon_onyma',
+                           'str1': 'account_name, contract, servis_point, address, tariff',
+                           'str2': '{}, {}, {}, {}, {}'.format(account_name, contract, servis_point, address, tariff)}                
+            try:
+                SQL.insert_table(**options)
+            except:
+                continue            
+        if phone_number in tv:
+            options = {'cursor': cursor,
+                       'table_name': 'abon_onyma',
+                       'str1': 'tv = "yes"',
+                       'str2': 'phone_number = {}'.format(phone_number)}
+            SQL.update_table(**options)
     connect.close()
 
-def make_abon_onyma():
-    pass
+
+def update_abon_onyma(file_list):
+    sessions = parsing_update_abon_onyma(file_list)
+    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+    cursor = connect.cursor()
+    current_ports = get_current_ports()
+    for session in sessions:
+        if session not in current_ports:
+            continue
+        if (sessions[session].hostname != current_ports[session]['hostname']) or (sessions[session].board != current_ports[session]['board']) or (sessions[session].port != current_ports[session]['port']):
+            options = {'cursor': cursor,
+                       'table_name': 'abon_onyma',
+                       'str1': 'hostname = "{}", board = {}, port = {}, mac_address = "{}", datetime = "{}"'.format(sessions[session].hostname, sessions[session].board, sessions[session].port, sessions[session].mac_address, sessions[session].dtime.strftime('%Y-%m-%d %H:%M:%S')),
+                       'str2': 'account_name = "{}"'.format(session)}
+            SQL.update_table(**options)
+            print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_ports[session]['hostname'], current_ports[session]['board'], current_ports[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
+    connect.close()
+
+
+def make_abon_onyma(file_list):
+    SQL.create_abon_onyma(drop=True)
+    parsing_make_abon_onyma(file_list)
+    update_abon_onyma(file_list)
     
     
-def update_abon_onyma():
-    pass
+    
+
 
 
 def delete_files(files):
@@ -268,13 +311,12 @@ def main():
     
     # Формирование таблицы abon_onyma
     if abon_onyma_1 and abon_onyma_2:
-        make_abon_onyma()
-        #SQL.create_abon_onyma(drop=True)
-        #read_sessions_files(onyma_file_list)
+        print('Запуск формирования таблицы abon_onyma')
+        make_abon_onyma(onyma_file_list)
     elif abon_onyma_1:
         # Найдены файлы с сессиями, запускаем обновление таблицы
-        update_abon_onyma()
-        pass
+        print('Запуск процесса обновления информации о портах')
+        update_abon_onyma(onyma_file_list)
         
         
         
