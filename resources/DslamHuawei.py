@@ -7,6 +7,7 @@ import re
 import os
 
 LOGGING = False
+LINE_PROFILE = False
 
 class DslamHuawei():
     def __init__(self, ip, login, password,  timeout):
@@ -20,7 +21,8 @@ class DslamHuawei():
             self.version = version.group(1)
         else:
             self.version = '-'
-        #self.set_adsl_line_profile()
+        if LINE_PROFILE:
+            self.set_adsl_line_profile()
     
     def __del__(self):
         self.tn.close()

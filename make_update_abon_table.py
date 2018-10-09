@@ -117,29 +117,25 @@ def parsing_make_abon_onyma(file_list):
                         # Определение учетного имени
                         account_name = '"{}"'.format(row[21])
                         if phone_number not in phones:
-                            phones[phone_number] = {}
-                            phones[phone_number]['accounts'] = []
-                            phones[phone_number]['servis_point'] = '"{}"'.format(row[1])
-                            phones[phone_number]['contract'] = '"{}"'.format(row[3])
-                        phones[phone_number]['accounts'].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'"))})
+                            phones[phone_number] = []
+                        phones[phone_number].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'")), 'servis_point': '"{}"'.format(row[1]), 'contract': '"{}"'.format(row[3])})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(phone_number)
             # Удаляю обработанный файл (так как нужен список, передаю список)
             delete_files([file])           
     # Занесение в базу данных
-    for phone_number in phones:
-        servis_point = phones[phone_number]['servis_point']
-        contract = phones[phone_number]['contract']
-        #print('{}: {}, {}'.format(phone_number, phones[phone_number]['accounts'], phones[phone_number]['count']))
-        for account in phones[phone_number]['accounts']:
+    for phone_numbers in phones:
+        for account in phones[phone_numbers]:
+            servis_point = account['servis_point']
+            contract = account['contract']
             account_name = account['account_name']
             tariff = account['tariff']
             address = account['address']
-            if len(phones[phone_number]['accounts']) == 1:
+            if len(phone_numbers) == 1:
                 options = {'cursor': cursor,
                            'table_name': 'abon_onyma',
                            'str1': 'account_name, phone_number, contract, servis_point, address, tariff',
-                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, phone_number, contract, servis_point, address, tariff)}
+                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, phone_numbers, contract, servis_point, address, tariff)}
             else:
                 options = {'cursor': cursor,
                            'table_name': 'abon_onyma',
@@ -148,12 +144,12 @@ def parsing_make_abon_onyma(file_list):
             try:
                 SQL.insert_table(**options)
             except:
-                continue            
-        if phone_number in tv:
+                continue                
+        if phone_numbers in tv:
             options = {'cursor': cursor,
                        'table_name': 'abon_onyma',
                        'str1': 'tv = "yes"',
-                       'str2': 'phone_number = {}'.format(phone_number)}
+                       'str2': 'phone_number = {}'.format(phone_numbers)}
             SQL.update_table(**options)
     connect.close()
 
@@ -194,7 +190,6 @@ def parsing_update_abon_onyma(files):
                         sessions[account_name] = session
                 else:
                     sessions[account_name] = session
-
         session_files.append(file)
     with open('resources{}session_files.db'.format(os.sep), 'bw') as file_dump:
             pickle.dump(session_files, file_dump)
@@ -237,14 +232,13 @@ def update_abon_onyma(file_list):
     connect.close()
 
 
-def argus_files(file_list):
+def parsing_make_abon_argus(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
     models = ['Huawei MA 5616', 'Huawei MA 5600']
     
-    # Подготовка регулярных выражений
+    # Подготовка регулярного выражения
     re_phone = re.compile(r'\((\d+)\)(.+)')                                 # Код, телефон
-    re_board = re.compile(r'- (\d*\D)?(\d+)')                               # Board
     
     # Обработка csv-файлов
     for file in file_list:
@@ -259,19 +253,11 @@ def argus_files(file_list):
                 cell_model = row[1].replace('=', '').replace('"', '')
                 if cell_model not in models or not re.search(r'ADSL.+\(Л\)', row[4]):
                     continue
-                cell_hostname = row[2].replace('=', '').replace('"', '')
-                cell_board = row[4].replace('=', '').replace('"', '')
-                cell_port = row[5].replace('=', '').replace('"', '')
                 cell_phone = row[9].replace('=', '').replace('"', '')
                 cell_address = row[6].replace('=', '').replace('"', '')
-                cell_type = row[8].replace('=', '').replace('"', '')
                 if not re_phone.search(cell_phone) or cell_address == '':
                     continue
-
                 try:
-                    hostname = '"{}"'.format(cell_hostname)                                                                                         # hostname
-                    board = int(re_board.search(cell_board).group(2))                                                                               # board
-                    port = int(cell_port)                                                                                                           # port
                     area_code = re_phone.search(cell_phone).group(1)                                                                                # код телефона
                     phone = re_phone.search(cell_phone).group(2)                                                                                    # телефон
                     phone_number = '"{}{}"'.format(area_code, phone).replace('ПППП', 'ПП')                                                          # полный номер (код+телефон)
@@ -294,14 +280,14 @@ def argus_files(file_list):
                     #print(cell_phone)
                     continue
                     
-                #print( '{}, {}, {}, {}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number, hostname, board, port))
+                #print( '{}, {}, {}, {}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number))
                 ## Вставка данных в таблицу
                 if len(phone_number) > 12:
                     continue
                 options = {'cursor': cursor,
-                           'table_name': 'abon_dsl',
-                           'str1': 'phone_number, area, locality, street, house_number, apartment_number, hostname, board, port',
-                           'str2': '{}, {}, {}, {}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number, hostname, board, port)}
+                           'table_name': 'abon_argus',
+                           'str1': 'phone_number, area, locality, street, house_number, apartment_number',
+                           'str2': '{}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number)}
                 try:
                     SQL.insert_table(**options)
                 except:
@@ -328,15 +314,19 @@ def make_abon_argus(file_list):
     #
     # Функция формирования таблицы abon_argus
     #
+    # Пересоздаем таблицу
+    SQL.create_abon_argus(drop=True)
+    parsing_make_abon_argus(file_list)
     delete_files(file_list)
     pass
     
 
 
-
 def main():
+    #
+    # Запуск программы
+    #
     print("Начало работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-    
     # Просмотр файлов в директории input/onyma/
     onyma_file_list = ['input' + os.sep + 'onyma' + os.sep + x for x in os.listdir('input' + os.sep + 'onyma')]
     # Проверка наличия файлов для abon_onyma
@@ -347,7 +337,6 @@ def main():
             abon_onyma_1 = True
         if 'Список подключений ШПД + ТВ' in file:
             abon_onyma_2 = True
-    
     # Формирование таблицы abon_onyma
     if abon_onyma_1 and abon_onyma_2:
         print('Запуск формирования таблицы abon_onyma')
@@ -356,13 +345,10 @@ def main():
         # Найдены только файлы с сессиями, запускаем обновление таблицы
         print('Запуск процесса обновления информации о портах')
         update_abon_onyma(onyma_file_list)
-    
-
     # Просмотр файлов в директории input/make_table/argus/
     argus_file_list = ['input' + os.sep + 'argus' + os.sep + x for x in os.listdir('input' + os.sep + 'argus')]
     if len(argus_file_list) > 0:
-        make_abon_argus(argus_file_list)
-        
+        make_abon_argus(argus_file_list)  
     print("Завершение работы: {}".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
     print('---------\n')
             

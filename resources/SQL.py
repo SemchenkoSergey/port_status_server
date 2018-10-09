@@ -64,13 +64,13 @@ def create_abon_onyma(drop=False):
         servis_point VARCHAR(100),
         address VARCHAR(150),
         tariff VARCHAR(150),
-        hostname VARCHAR(50),
+        hostname VARCHAR(75),
         board TINYINT UNSIGNED,
         port TINYINT UNSIGNED,
         mac_address CHAR(12),
         tv ENUM('yes', 'no') DEFAULT 'no',
         datetime DATETIME,
-        CONSTRAINT pk_abon_dsl PRIMARY KEY (account_name)
+        CONSTRAINT pk_abon_onyma PRIMARY KEY (account_name)
         )'''
         cursor.execute(table)
     except:
@@ -109,7 +109,7 @@ def create_abon_argus(drop=False):
         house_number VARCHAR(10),
         apartment_number VARCHAR(10),
         timestamp TIMESTAMP,
-        CONSTRAINT pk_abon_dsl PRIMARY KEY (phone_number)    
+        CONSTRAINT pk_abon_argus PRIMARY KEY (phone_number)    
         )'''
         cursor.execute(table)
     except:
@@ -118,6 +118,45 @@ def create_abon_argus(drop=False):
         cursor.execute('commit')     
     connect.close()
     
+
+def create_data_profiles(drop=False):
+    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+    cursor = connect.cursor()
+    try:
+        if drop:
+            cursor.execute('DROP TABLE IF EXISTS data_profiles')
+        table = '''
+        CREATE TABLE IF NOT EXISTS data_profiles (
+        hostname VARCHAR(75) NOT NULL,
+        board TINYINT UNSIGNED NOT NULL,
+        port TINYINT UNSIGNED NOT NULL,
+        profile_name VARCHAR(30) NOT NULL,
+        up_limit SMALLINT UNSIGNED,
+        dw_limit SMALLINT UNSIGNED,
+        timestamp TIMESTAMP,
+        CONSTRAINT pk_data_profiles PRIMARY KEY (hostname, board, port)
+        )'''
+        cursor.execute(table)
+    except:
+        pass
+    else:
+        cursor.execute('commit')
+        
+    try:
+        command = '''
+         CREATE INDEX idx_phone_number ON abon_onyma(phone_number)
+        '''
+        cursor.execute(command)
+        command = '''
+        CREATE INDEX idx_contract ON abon_onyma(contract)
+        '''
+        cursor.execute(command)        
+    except:
+        pass
+    else:
+        cursor.execute('commit')    
+    connect.close()
+
     
 def delete_table(table_name, str1):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
