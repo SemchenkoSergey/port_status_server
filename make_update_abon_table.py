@@ -92,7 +92,7 @@ def parsing_make_abon_onyma(file_list):
     #
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
-    phones = {}             # {'телефон': {'accounts': [], 'count': кол-во}}
+    phones = {}             # добавить описание формата
     tv = []                 # Список телефонов с IPTV   
     # Чтение информации из файлов
     for file in file_list:
@@ -106,13 +106,15 @@ def parsing_make_abon_onyma(file_list):
                     area_code = get_area_code(row[1])
                     if area_code is False:
                         continue
-                    if (len(row[7]) == 10) and (area_code in row[7]):
-                        phone_number = '"{}"'.format(row[7])
-                    elif (len(row[7]) < 10) and (len(row[7]) > 0):
-                        phone_number = '"{}{}"'.format(area_code, row[7]).replace('-', '')
+                    phone_cell = row[7].replace(' ', '').replace('-', '')
+                    if (len(phone_cell) == 10) and (area_code in phone_cell):
+                        phone_number = '"{}"'.format(phone_cell)
+                    elif (len(phone_cell) < 10) and (len(phone_cell) > 0):
+                        phone_number = '"{}{}"'.format(area_code, phone_cell)
+                        if len(phone_number) > 12:
+                            phone_number = '"-"'
                     else:
-                        phone_number = '"{}"'.format(row[7])
-                    
+                        phone_number = '"-"'
                     if row[23] == 'SSG-подключение':
                         # Определение учетного имени
                         account_name = '"{}"'.format(row[21])
@@ -121,21 +123,21 @@ def parsing_make_abon_onyma(file_list):
                         phones[phone_number].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'")), 'servis_point': '"{}"'.format(row[1]), 'contract': '"{}"'.format(row[3])})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(phone_number)
-            # Удаляю обработанный файл (так как нужен список, передаю список)
-            delete_files([file])           
+        # Удаляю обработанный файл (так как нужен список, передаю список)
+        delete_files([file])           
     # Занесение в базу данных
-    for phone_numbers in phones:
-        for account in phones[phone_numbers]:
+    for insert_phone in phones:
+        for account in phones[insert_phone]:
             servis_point = account['servis_point']
             contract = account['contract']
             account_name = account['account_name']
             tariff = account['tariff']
             address = account['address']
-            if len(phone_numbers) == 1:
+            if len(phones[insert_phone]) == 1:
                 options = {'cursor': cursor,
                            'table_name': 'abon_onyma',
                            'str1': 'account_name, phone_number, contract, servis_point, address, tariff',
-                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, phone_numbers, contract, servis_point, address, tariff)}
+                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, insert_phone, contract, servis_point, address, tariff)}
             else:
                 options = {'cursor': cursor,
                            'table_name': 'abon_onyma',
@@ -145,11 +147,11 @@ def parsing_make_abon_onyma(file_list):
                 SQL.insert_table(**options)
             except:
                 continue                
-        if phone_numbers in tv:
+        if insert_phone in tv:
             options = {'cursor': cursor,
                        'table_name': 'abon_onyma',
                        'str1': 'tv = "yes"',
-                       'str2': 'phone_number = {}'.format(phone_numbers)}
+                       'str2': 'phone_number = {}'.format(insert_phone)}
             SQL.update_table(**options)
     connect.close()
 
@@ -228,7 +230,7 @@ def update_abon_onyma(file_list):
                        'str1': 'hostname = "{}", board = {}, port = {}, mac_address = "{}", datetime = "{}"'.format(sessions[session].hostname, sessions[session].board, sessions[session].port, sessions[session].mac_address, sessions[session].dtime.strftime('%Y-%m-%d %H:%M:%S')),
                        'str2': 'account_name = "{}"'.format(session)}
             SQL.update_table(**options)
-            print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_ports[session]['hostname'], current_ports[session]['board'], current_ports[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
+            #print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_ports[session]['hostname'], current_ports[session]['board'], current_ports[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
     connect.close()
 
 
