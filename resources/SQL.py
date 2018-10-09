@@ -58,7 +58,7 @@ def create_abon_onyma(drop=False):
             cursor.execute('DROP TABLE IF EXISTS abon_onyma')
         table = '''
         CREATE TABLE IF NOT EXISTS abon_onyma (
-        account_name VARCHAR(20) NOT NULL,
+        account_name VARCHAR(50) NOT NULL,
         phone_number CHAR(10),
         contract VARCHAR(20),
         servis_point VARCHAR(100),
