@@ -63,6 +63,7 @@ def create_abon_onyma(drop=False):
         contract VARCHAR(20),
         servis_point VARCHAR(100),
         address VARCHAR(150),
+        name VARCHAR(150),
         tariff VARCHAR(150),
         hostname VARCHAR(75),
         board TINYINT UNSIGNED,

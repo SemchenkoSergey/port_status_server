@@ -120,7 +120,7 @@ def parsing_make_abon_onyma(file_list):
                         account_name = '"{}"'.format(row[21])
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'")), 'servis_point': '"{}"'.format(row[1]), 'contract': '"{}"'.format(row[3])})
+                        phones[phone_number].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'")), 'servis_point': '"{}"'.format(row[1]), 'contract': '"{}"'.format(row[3]), 'name': '"{}"'.format(row[5].replace('"', "'"))})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(phone_number)
         # Удаляю обработанный файл (так как нужен список, передаю список)
@@ -133,16 +133,17 @@ def parsing_make_abon_onyma(file_list):
             account_name = account['account_name']
             tariff = account['tariff']
             address = account['address']
+            name = account['name']
             if len(phones[insert_phone]) == 1:
                 options = {'cursor': cursor,
                            'table_name': 'abon_onyma',
-                           'str1': 'account_name, phone_number, contract, servis_point, address, tariff',
-                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, insert_phone, contract, servis_point, address, tariff)}
+                           'str1': 'account_name, phone_number, contract, servis_point, address, tariff, name',
+                           'str2': '{}, {}, {}, {}, {}, {}, {}'.format(account_name, insert_phone, contract, servis_point, address, tariff, name)}
             else:
                 options = {'cursor': cursor,
                            'table_name': 'abon_onyma',
-                           'str1': 'account_name, contract, servis_point, address, tariff',
-                           'str2': '{}, {}, {}, {}, {}'.format(account_name, contract, servis_point, address, tariff)}                
+                           'str1': 'account_name, contract, servis_point, address, tariff, name',
+                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, contract, servis_point, address, tariff, name)}                
             try:
                 SQL.insert_table(**options)
             except:
@@ -178,7 +179,7 @@ def parsing_update_abon_onyma(files):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader((line.replace('\0','') for line in f), delimiter=';')
             for row in reader:
-                if row[11] != 'DSL' or not re_dslam.search(row[6]):
+                if not re_dslam.search(row[6]):
                     continue
                 account_name = row[5]
                 hostname = re_dslam.search(row[6]).group(1)
