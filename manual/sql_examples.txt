@@ -116,7 +116,7 @@ FROM abon_dsl ad INNER JOIN data_dsl dd
 WHERE
  dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
  AND ad.valid = 'yes'
- AND ad.phone_number = '8654740169'
+ AND ad.phone_number = '8654764291'
 ORDER BY dd.datetime;
 
 
@@ -140,3 +140,38 @@ WHERE
  AND port=49
 ORDER BY datetime;
 
+
+
+
+--- Для коммерческого блока ---
+
+SELECT
+ ao.servis_point 'Пункт продаж',
+ ao.phone_number 'Номер тел.',
+ ao.contract 'Номер договора',
+ ao.account_name 'Учетное имя',
+ ao.address 'Адрес',
+ ao.tariff 'Тариф',
+  ao.tv 'Наличие ТВ',
+ MIN(dd.max_dw_rate) 'Мин. вх. скор.',
+ MAX(dd.max_dw_rate) 'Макс. вх. скор.',
+ dp.profile_name 'Название профиля',
+ dp.up_limit 'Ограничение Upstream',
+ dp.dw_limit 'Ограничение Downstream',
+ ao.hostname 'Hostname',
+ ao.board 'Board',
+ ao.port 'Port' 
+FROM abon_onyma ao INNER JOIN data_dsl dd
+ ON ao.hostname=dd.hostname
+ AND ao.board=dd.board
+ AND ao.port=dd.port
+ INNER JOIN data_profiles dp
+  ON ao.hostname=dp.hostname
+  AND ao.board=dp.board
+  AND ao.port=dp.port
+WHERE
+ dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
+ AND dd.max_dw_rate IS NOT NULL
+ AND ao.servis_point LIKE '%изобильный%'
+GROUP BY ao.account_name
+ORDER BY ao.hostname, ao.board, ao.port
