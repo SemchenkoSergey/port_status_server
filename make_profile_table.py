@@ -65,6 +65,9 @@ def run(host):
     if dslam is None:
         return (0, host)
     hostname = dslam.get_info()['hostname']
+    ip = dslam.get_info()['ip']
+    if dslam.adsl_line_profile == {}:
+        print('{}({}) не удалось получить список профайлов'.format(hostname, ip))    
     for board in dslam.boards:
         ports = dslam.get_adsl_line_profile_board(board)
         for port, idx_profile in enumerate(ports):
