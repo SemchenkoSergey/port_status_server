@@ -108,24 +108,26 @@ def parsing_make_abon_onyma(file_list):
                         continue
                     phone_cell = row[7].replace(' ', '').replace('-', '')
                     if (len(phone_cell) == 10) and (area_code in phone_cell):
-                        phone_number = '"{}"'.format(phone_cell)
+                        phone_number = phone_cell
                     elif (len(phone_cell) < 10) and (len(phone_cell) > 0):
-                        phone_number = '"{}{}"'.format(area_code, phone_cell)
-                        if len(phone_number) > 12:
-                            phone_number = '"-"'
+                        phone_number = '{}{}'.format(area_code, phone_cell)
+                        if len(phone_number) > 10:
+                            phone_number = '-'
                     else:
-                        phone_number = '"-"'
+                        phone_number = '-'
                     if row[23] == 'SSG-подключение':
                         # Определение учетного имени
-                        account_name = '"{}"'.format(row[21])
+                        account_name = row[21]
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff': '"{}"'.format(row[26].replace('"', "'")), 'address': '"{}"'.format(row[6].replace('"', "'")), 'servis_point': '"{}"'.format(row[1]), 'contract': '"{}"'.format(row[3]), 'name': '"{}"'.format(row[5].replace('"', "'"))})
+                        phones[phone_number].append({'account_name': account_name, 'tariff': row[26].replace('"', "'"), 'address': row[6].replace('"', "'"), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'")})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(phone_number)
         # Удаляю обработанный файл (так как нужен список, передаю список)
         delete_files([file])           
     # Занесение в базу данных
+    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, contract, servis_point, address, tariff, name) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    params = []
     for insert_phone in phones:
         for account in phones[insert_phone]:
             servis_point = account['servis_point']
@@ -135,25 +137,16 @@ def parsing_make_abon_onyma(file_list):
             address = account['address']
             name = account['name']
             if len(phones[insert_phone]) == 1:
-                options = {'cursor': cursor,
-                           'table_name': 'abon_onyma',
-                           'str1': 'account_name, phone_number, contract, servis_point, address, tariff, name',
-                           'str2': '{}, {}, {}, {}, {}, {}, {}'.format(account_name, insert_phone, contract, servis_point, address, tariff, name)}
+                params.append((account_name, insert_phone, contract, servis_point, address, tariff, name))
             else:
-                options = {'cursor': cursor,
-                           'table_name': 'abon_onyma',
-                           'str1': 'account_name, contract, servis_point, address, tariff, name',
-                           'str2': '{}, {}, {}, {}, {}, {}'.format(account_name, contract, servis_point, address, tariff, name)}                
-            try:
-                SQL.insert_table(**options)
-            except:
-                continue                
-        if insert_phone in tv:
-            options = {'cursor': cursor,
-                       'table_name': 'abon_onyma',
-                       'str1': 'tv = "yes"',
-                       'str2': 'phone_number = {}'.format(insert_phone)}
-            SQL.update_table(**options)
+                params.append((account_name, 'NULL', contract, servis_point, address, tariff, name))
+    SQL.modify_table_many(cursor, command, params)
+    if insert_phone in tv:
+        options = {'cursor': cursor,
+                   'table_name': 'abon_onyma',
+                   'str1': 'tv = "yes"',
+                   'str2': 'phone_number = {}'.format(insert_phone)}
+        SQL.update_table(**options)
     connect.close()
 
 

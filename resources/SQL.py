@@ -15,7 +15,7 @@ def create_data_dsl(drop=False):
         table = '''
         CREATE TABLE IF NOT EXISTS data_dsl (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        hostname VARCHAR(50) NOT NULL,
+        hostname VARCHAR(200) NOT NULL,
         board TINYINT UNSIGNED NOT NULL,
         port TINYINT UNSIGNED NOT NULL,
         up_snr FLOAT(3,1),
@@ -62,10 +62,10 @@ def create_abon_onyma(drop=False):
         phone_number CHAR(10),
         contract VARCHAR(20),
         servis_point VARCHAR(100),
-        address VARCHAR(150),
-        name VARCHAR(150),
-        tariff VARCHAR(150),
-        hostname VARCHAR(75),
+        address VARCHAR(500),
+        name VARCHAR(500),
+        tariff VARCHAR(500),
+        hostname VARCHAR(200),
         board TINYINT UNSIGNED,
         port TINYINT UNSIGNED,
         mac_address CHAR(12),
@@ -128,10 +128,10 @@ def create_data_profiles(drop=False):
             cursor.execute('DROP TABLE IF EXISTS data_profiles')
         table = '''
         CREATE TABLE IF NOT EXISTS data_profiles (
-        hostname VARCHAR(75) NOT NULL,
+        hostname VARCHAR(200) NOT NULL,
         board TINYINT UNSIGNED NOT NULL,
         port TINYINT UNSIGNED NOT NULL,
-        profile_name VARCHAR(30) NOT NULL,
+        profile_name VARCHAR(200) NOT NULL,
         up_limit SMALLINT UNSIGNED,
         dw_limit SMALLINT UNSIGNED,
         timestamp TIMESTAMP,
@@ -202,7 +202,20 @@ def get_table_data(table_name, str1, str2):
     result = cursor.fetchall()
     connect.close()
     return result
-        
+
+
+def modify_table_many(cursor, command, param):
+    #
+    # Множественное изменение таблицы
+    #
+    result = cursor.executemany(command, param)
+    try:
+        result = cursor.executemany(command, param)
+    except Exception as ex:
+        print(ex)
+    finally:
+        cursor.execute('commit')
+        return result         
 
 def insert_table(cursor, table_name, str1, str2):
     command = '''
