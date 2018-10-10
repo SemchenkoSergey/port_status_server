@@ -21,8 +21,10 @@ class DslamHuawei():
             self.version = version.group(1)
         else:
             self.version = '-'
+        self.adsl_line_profile = {}
         if LINE_PROFILE:
             self.set_adsl_line_profile()
+            
     
     def __del__(self):
         self.tn.close()
@@ -145,7 +147,7 @@ class DslamHuawei():
         str_out = self.write_read_data(command_line)
         if str_out is False:
             return False
-        self.adsl_line_profile = {}
+        #self.adsl_line_profile = {}
         prev_name = ''
         prev_index = ''
         prev_up_rate = ''
