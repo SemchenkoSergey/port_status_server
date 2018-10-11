@@ -93,7 +93,7 @@ def parsing_make_abon_onyma(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
     phones = {}             # добавить описание формата
-    tv = []                 # Список телефонов с IPTV   
+    tv = []                 # Список лицевых счетов с IPTV   
     # Чтение информации из файлов
     for file in file_list:
         if (file.split('.')[-1] != 'csv') or ('Список подключений ШПД + ТВ' not in file):
@@ -122,7 +122,7 @@ def parsing_make_abon_onyma(file_list):
                             phones[phone_number] = []
                         phones[phone_number].append({'account_name': account_name, 'tariff': row[26].replace('"', "'"), 'address': row[6].replace('"', "'"), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'")})
                     elif row[23] == '[ЮТК] Сервис IPTV':
-                        tv.append(phone_number)
+                        tv.append(row[3])
         # Удаляю обработанный файл (так как нужен список, передаю список)
         delete_files([file])           
     # Занесение в базу данных
@@ -140,13 +140,13 @@ def parsing_make_abon_onyma(file_list):
                 params.append((account_name, insert_phone, contract, servis_point, address, tariff, name))
             else:
                 params.append((account_name, 'NULL', contract, servis_point, address, tariff, name))
+    print('Занесение данных об абонентах в базу...')
     SQL.modify_table_many(cursor, command, params)
-    if insert_phone in tv:
-        options = {'cursor': cursor,
-                   'table_name': 'abon_onyma',
-                   'str1': 'tv = "yes"',
-                   'str2': 'phone_number = {}'.format(insert_phone)}
-        SQL.update_table(**options)
+    command = "UPDATE IGNORE abon_onyma SET tv = 'yes' WHERE contract = %s"
+    params = []
+    for contract in tv:
+        params.append((contract, ))
+    SQL.modify_table_many(cursor, command, params)
     connect.close()
 
 
@@ -215,16 +215,15 @@ def update_abon_onyma(file_list):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
     current_ports = get_current_ports()
+    command = "UPDATE IGNORE abon_onyma SET hostname = %s, board = %s, port = %s, mac_address = %s, datetime = %s WHERE account_name = %s"
+    params = []
     for session in sessions:
         if session not in current_ports:
             continue
         if (sessions[session].hostname != current_ports[session]['hostname']) or (sessions[session].board != current_ports[session]['board']) or (sessions[session].port != current_ports[session]['port']):
-            options = {'cursor': cursor,
-                       'table_name': 'abon_onyma',
-                       'str1': 'hostname = "{}", board = {}, port = {}, mac_address = "{}", datetime = "{}"'.format(sessions[session].hostname, sessions[session].board, sessions[session].port, sessions[session].mac_address, sessions[session].dtime.strftime('%Y-%m-%d %H:%M:%S')),
-                       'str2': 'account_name = "{}"'.format(session)}
-            SQL.update_table(**options)
-            #print('{}: {}/{}/{} --> {}/{}/{}'.format(session, current_ports[session]['hostname'], current_ports[session]['board'], current_ports[session]['port'], sessions[session].hostname, sessions[session].board, sessions[session].port))
+            params.append((sessions[session].hostname, sessions[session].board, sessions[session].port, sessions[session].mac_address, sessions[session].dtime.strftime('%Y-%m-%d %H:%M:%S'), session))
+    print('Обновление данных об абонентах в базе...')
+    SQL.modify_table_many(cursor, command, params)
     connect.close()
 
 
