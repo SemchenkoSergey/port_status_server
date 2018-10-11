@@ -140,12 +140,13 @@ def parsing_make_abon_onyma(file_list):
                 params.append((account_name, insert_phone, contract, servis_point, address, tariff, name))
             else:
                 params.append((account_name, 'NULL', contract, servis_point, address, tariff, name))
-    print('Занесение данных об абонентах в базу...')
+    print('Занесение данных об абонентах в таблицу abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     command = "UPDATE IGNORE abon_onyma SET tv = 'yes' WHERE contract = %s"
     params = []
     for contract in tv:
         params.append((contract, ))
+    print('Занесение данных об IPTV в таблицу abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     connect.close()
 
@@ -222,24 +223,29 @@ def update_abon_onyma(file_list):
             continue
         if (sessions[session].hostname != current_ports[session]['hostname']) or (sessions[session].board != current_ports[session]['board']) or (sessions[session].port != current_ports[session]['port']):
             params.append((sessions[session].hostname, sessions[session].board, sessions[session].port, sessions[session].mac_address, sessions[session].dtime.strftime('%Y-%m-%d %H:%M:%S'), session))
-    print('Обновление данных об абонентах в базе...')
+    print('Обновление тех. данных об абонентах в таблице abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     connect.close()
 
 
 def parsing_make_abon_argus(file_list):
+    #
+    # Функция обработки файлов в папке argus и занесения данных в базу
+    #
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
     models = ['Huawei MA 5616', 'Huawei MA 5600']
     
     # Подготовка регулярного выражения
-    re_phone = re.compile(r'\((\d+)\)(.+)')                                 # Код, телефон
-    
+    re_phone = re.compile(r'\((\d+)\)(.+)')         # Код, телефон
+    command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number) VALUES (%s, %s, %s, %s, %s, %s)"
+    params = []    
     # Обработка csv-файлов
     for file in file_list:
         if file.split('.')[-1] != 'csv':
             continue
         print('Обработка файла {}'.format(file))
+        
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')
             for row in reader:
@@ -253,21 +259,21 @@ def parsing_make_abon_argus(file_list):
                 if not re_phone.search(cell_phone) or cell_address == '':
                     continue
                 try:
-                    area_code = re_phone.search(cell_phone).group(1)                                                                                # код телефона
-                    phone = re_phone.search(cell_phone).group(2)                                                                                    # телефон
-                    phone_number = '"{}{}"'.format(area_code, phone).replace('ПППП', 'ПП')                                                          # полный номер (код+телефон)
-                    if re.search(r'.*р-н', cell_address):                                                                                           # в адресе есть район
-                        area = '"{}"'.format(re.search(r'.*р-н', cell_address).group(0))                                                            # район
-                        locality = '"{}"'.format(re.search(r'р-н, (.*?),', cell_address).group(1))                                                  # нас. пункт                    
-                    elif re.search(r'.+\sг\.,\s+(.+\s(?:п|г|с|х|ст-ца|аул)?\.?),', cell_address):                                                   # в адресе есть город, затем еще город, село, поселок, хутор и т.д.
-                        area = '"{}"'.format(re.search(r'^(.+\sг\.),', cell_address).group(1))                                                      # район
-                        locality = '"{}"'.format(re.search(r'.+\sг\.,\s+(.+\s(?:п|г|с|х|ст-ца|аул)?\.?),', cell_address).group(1))                  # нас. пункт
-                    elif re.search(r'^(.+\sг\.),', cell_address):                                                                                   # адрес начинается с города
-                        area = '"{}"'.format(re.search(r'^(.+\sг\.),', cell_address).group(1))                                                      # район
-                        locality = area                                                                                                             # нас. пункт
-                    street = '"{}"'.format(re.search(r'(?:.+(?:п|г|с|х|ст-ца|аул|аул)?\.?),\s+(.+?),\s+(?:.+),\s?кв\.', cell_address).group(1))     # улица
-                    house_number = '"{}"'.format(re.search(r'(\S+?)\s*,кв', cell_address).group(1))                                                 # дом
-                    apartment_number = '"{}"'.format(re.search(r'кв.\s?(.*)', cell_address).group(1))                                               # квартира
+                    area_code = re_phone.search(cell_phone).group(1)                                                                # код телефона
+                    phone = re_phone.search(cell_phone).group(2)                                                                    # телефон
+                    phone_number = '{}{}'.format(area_code, phone).replace('ПППП', 'ПП')                                            # полный номер (код+телефон)
+                    if re.search(r'.*р-н', cell_address):                                                                           # в адресе есть район
+                        area = re.search(r'.*р-н', cell_address).group(0)                                                           # район
+                        locality = re.search(r'р-н, (.*?),', cell_address).group(1)                                                 # нас. пункт                    
+                    elif re.search(r'.+\sг\.,\s+(.+\s(?:п|г|с|х|ст-ца|аул)?\.?),', cell_address):                                   # в адресе есть город, затем еще город, село, поселок, хутор и т.д.
+                        area = re.search(r'^(.+\sг\.),', cell_address).group(1)                                                     # район
+                        locality = re.search(r'.+\sг\.,\s+(.+\s(?:п|г|с|х|ст-ца|аул)?\.?),', cell_address).group(1)                 # нас. пункт
+                    elif re.search(r'^(.+\sг\.),', cell_address):                                                                   # адрес начинается с города
+                        area = re.search(r'^(.+\sг\.),', cell_address).group(1)                                                     # район
+                        locality = area                                                                                             # нас. пункт
+                    street = re.search(r'(?:.+(?:п|г|с|х|ст-ца|аул|аул)?\.?),\s+(.+?),\s+(?:.+),\s?кв\.', cell_address).group(1)    # улица
+                    house_number = re.search(r'(\S+?)\s*,кв', cell_address).group(1)                                                # дом
+                    apartment_number = re.search(r'кв.\s?(.*)', cell_address).group(1)                                              # квартира
                 except Exception as ex:
                     #print('-------------------------------')
                     #print(ex)
@@ -276,17 +282,12 @@ def parsing_make_abon_argus(file_list):
                     continue
                     
                 #print( '{}, {}, {}, {}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number))
-                ## Вставка данных в таблицу
-                if len(phone_number) > 12:
+                ## Вставка данных в таблицу              
+                if len(phone_number) > 10:
                     continue
-                options = {'cursor': cursor,
-                           'table_name': 'abon_argus',
-                           'str1': 'phone_number, area, locality, street, house_number, apartment_number',
-                           'str2': '{}, {}, {}, {}, {}, {}'.format(phone_number, area, locality, street, house_number, apartment_number)}
-                try:
-                    SQL.insert_table(**options)
-                except:
-                    continue
+                params.append((phone_number, area, locality, street, house_number, apartment_number))
+    print('Занесение данных об абонентах в таблицу abon_argus...')
+    SQL.modify_table_many(cursor, command, params)
     connect.close()
 
 
@@ -313,7 +314,6 @@ def make_abon_argus(file_list):
     SQL.create_abon_argus(drop=True)
     parsing_make_abon_argus(file_list)
     delete_files(file_list)
-    pass
     
 
 

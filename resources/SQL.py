@@ -104,9 +104,9 @@ def create_abon_argus(drop=False):
         table = '''
         CREATE TABLE IF NOT EXISTS abon_argus (
         phone_number CHAR(10) NOT NULL,
-        area VARCHAR(30),
-        locality VARCHAR(30),
-        street VARCHAR(30),
+        area VARCHAR(50),
+        locality VARCHAR(50),
+        street VARCHAR(50),
         house_number VARCHAR(10),
         apartment_number VARCHAR(10),
         timestamp TIMESTAMP,
