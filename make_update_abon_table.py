@@ -139,7 +139,7 @@ def parsing_make_abon_onyma(file_list):
             if len(phones[insert_phone]) == 1:
                 params.append((account_name, insert_phone, contract, servis_point, address, tariff, name))
             else:
-                params.append((account_name, 'NULL', contract, servis_point, address, tariff, name))
+                params.append((account_name, None, contract, servis_point, address, tariff, name))
     print('Занесение данных об абонентах в таблицу abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     command = "UPDATE IGNORE abon_onyma SET tv = 'yes' WHERE contract = %s"
@@ -239,7 +239,7 @@ def parsing_make_abon_argus(file_list):
     # Подготовка регулярного выражения
     re_phone = re.compile(r'\((\d+)\)(.+)')         # Код, телефон
     command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number) VALUES (%s, %s, %s, %s, %s, %s)"
-    params = []    
+    params = []
     # Обработка csv-файлов
     for file in file_list:
         if file.split('.')[-1] != 'csv':

@@ -64,20 +64,22 @@ def run(host):
     dslam = connect_dslam(host)
     if dslam is None:
         return (0, host)
+    command = "INSERT IGNORE INTO data_profiles (hostname, board, port, profile_name, up_limit, dw_limit) VALUES (%s, %s, %s, %s, %s, %s)"
+    params = []    
     hostname = dslam.get_info()['hostname']
     ip = dslam.get_info()['ip']
     if dslam.adsl_line_profile == {}:
         print('{}({}) не удалось получить список профайлов'.format(hostname, ip))    
     for board in dslam.boards:
         ports = dslam.get_adsl_line_profile_board(board)
+        if not ports:
+            continue
         for port, idx_profile in enumerate(ports):
             if dslam.adsl_line_profile.get(idx_profile) is None:
                 continue
-            options = {'cursor': cursor,
-                       'table_name': 'data_profiles',
-                       'str1': 'hostname, board, port, profile_name, up_limit, dw_limit',
-                       'str2': '"{}", {}, {}, "{}", {}, {}'.format(hostname, board, port, dslam.adsl_line_profile[idx_profile]['profile_name'], dslam.adsl_line_profile[idx_profile]['up_rate'], dslam.adsl_line_profile[idx_profile]['dw_rate'])}
-            SQL.insert_table(**options)
+            params.append((hostname, board, port, dslam.adsl_line_profile[idx_profile]['profile_name'], dslam.adsl_line_profile[idx_profile]['up_rate'], dslam.adsl_line_profile[idx_profile]['dw_rate']))
+    #print('Занесение данных об профайлах DSLAM {} в таблицу data_profiles'.format(hostname))
+    SQL.modify_table_many(cursor, command, params)
     connect.close()
     del dslam
     return (1, host)
@@ -102,8 +104,7 @@ def main():
     SQL.create_data_dsl()
     # Запуск основного кода
     with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
-        results = executor.map(run, dslams)
-    
+        results = executor.map(run, dslams)  
     for result in results:
         if result is None:
             continue

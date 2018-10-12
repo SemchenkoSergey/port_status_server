@@ -56,27 +56,23 @@ def run(host):
     dslam = connect_dslam(host)
     if dslam is None:
         return (0, host)
+    command = "INSERT IGNORE INTO data_dsl (hostname, board, port, up_snr, dw_snr, up_att, dw_att, max_up_rate, max_dw_rate, up_rate, dw_rate, datetime) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+    params = []      
     hostname = dslam.get_info()['hostname']
     ip = dslam.get_info()['ip']
     for board in dslam.boards:
         current_time = datetime.datetime.now()
         paramConnectBoard = dslam.get_line_operation_board(board)
-        if paramConnectBoard == False:
+        if not paramConnectBoard:
             continue
         for port in range(0,dslam.ports):
             param = paramConnectBoard[port]
             if param['up_snr'] == '-':
-                options = {'cursor': cursor,
-                           'table_name': 'data_dsl',
-                           'str1': 'hostname, board, port, datetime',
-                           'str2': '"{}", {}, {}, "{}"'.format(hostname, board, port, current_time.strftime('%Y-%m-%d %H:%M:%S'))}
-                SQL.insert_table(**options)
-                continue
-            options = {'cursor': cursor,
-                       'table_name': 'data_dsl',
-                       'str1': 'hostname, board, port, up_snr, dw_snr, up_att, dw_att, max_up_rate, max_dw_rate, up_rate, dw_rate, datetime',
-                       'str2': '"{}", {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "{}"'.format(hostname, board, port, param['up_snr'], param['dw_snr'], param['up_att'], param['dw_att'], param['max_up_rate'], param['max_dw_rate'], param['up_rate'], param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))}
-            SQL.insert_table(**options)
+                param = (hostname, board, port, None, None, None, None, None, None, None, None, current_time.strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                param = (hostname, board, port, param['up_snr'], param['dw_snr'], param['up_att'], param['dw_att'], param['max_up_rate'], param['max_dw_rate'], param['up_rate'], param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))
+            params.append(param)
+    SQL.modify_table_many(cursor, command, params)
     connect.close()
     del dslam
     return (1, host)
