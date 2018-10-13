@@ -208,7 +208,6 @@ def modify_table_many(cursor, command, param):
     #
     # Множественное изменение таблицы
     #
-    result = cursor.executemany(command, param)
     try:
         result = cursor.executemany(command, param)
     except Exception as ex:

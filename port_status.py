@@ -66,11 +66,11 @@ def run(host):
         if not paramConnectBoard:
             continue
         for port in range(0,dslam.ports):
-            param = paramConnectBoard[port]
-            if param['up_snr'] == '-':
+            connect_param = paramConnectBoard[port]
+            if connect_param['up_snr'] == '-':
                 param = (hostname, board, port, None, None, None, None, None, None, None, None, current_time.strftime('%Y-%m-%d %H:%M:%S'))
             else:
-                param = (hostname, board, port, param['up_snr'], param['dw_snr'], param['up_att'], param['dw_att'], param['max_up_rate'], param['max_dw_rate'], param['up_rate'], param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))
+                param = (hostname, board, port, connect_param['up_snr'], connect_param['dw_snr'], connect_param['up_att'], connect_param['dw_att'], connect_param['max_up_rate'], connect_param['max_dw_rate'], connect_param['up_rate'], connect_param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))
             params.append(param)
     SQL.modify_table_many(cursor, command, params)
     connect.close()
