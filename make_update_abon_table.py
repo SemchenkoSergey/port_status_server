@@ -240,6 +240,23 @@ def parsing_make_abon_argus(file_list):
     re_phone = re.compile(r'\((\d+)\)(.+)')         # Код, телефон
     command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number) VALUES (%s, %s, %s, %s, %s, %s)"
     params = []
+    # Выбор типа отчета
+    if Settings.argus_type == 1:
+        report_len = 10
+        num_model = 1
+        num_board = 4
+        num_address = 6
+        num_phone = 9
+    elif Settings.argus_type == 2:
+        report_len = 11
+        num_model = 2
+        num_board = 5
+        num_address = 7
+        num_phone = 10
+    else:
+        print('Неизвестный тип отчета АРГУС')
+        return
+
     # Обработка csv-файлов
     for file in file_list:
         if file.split('.')[-1] != 'csv':
@@ -249,13 +266,13 @@ def parsing_make_abon_argus(file_list):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')
             for row in reader:
-                if len(row) < 10:
+                if len(row) < report_len:
                     continue
-                cell_model = row[1].replace('=', '').replace('"', '')
-                if cell_model not in models or not re.search(r'ADSL.+\(Л\)', row[4]):
+                cell_model = row[num_model].replace('=', '').replace('"', '')
+                if cell_model not in models or not re.search(r'ADSL.+\(Л\)', row[num_board]):
                     continue
-                cell_phone = row[9].replace('=', '').replace('"', '')
-                cell_address = row[6].replace('=', '').replace('"', '')
+                cell_phone = row[num_phone].replace('=', '').replace('"', '')
+                cell_address = row[num_address].replace('=', '').replace('"', '')
                 if not re_phone.search(cell_phone) or cell_address == '':
                     continue
                 try:
