@@ -116,7 +116,7 @@ FROM abon_dsl ad INNER JOIN data_dsl dd
 WHERE
  dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -3 DAY)
  AND ad.valid = 'yes'
- AND ad.phone_number = '8654764291'
+ AND ad.phone_number = '8654745615'
 ORDER BY dd.datetime;
 
 
@@ -144,7 +144,6 @@ ORDER BY datetime;
 
 
 --- Для коммерческого блока ---
-(вместо Изобильного указать нужный пункт продаж)
 
 SELECT
  ao.servis_point 'Пункт продаж',
@@ -152,29 +151,42 @@ SELECT
  ao.contract 'Номер договора',
  ao.account_name 'Учетное имя',
  ao.address 'Адрес',
- ao.name 'Ф.И.О',
+ ao.name 'Ф.И.О.',
  ao.tariff 'Тариф',
-  ao.tv 'Наличие ТВ',
- MIN(dd.max_dw_rate) 'Мин. вх. скор.',
- MAX(dd.max_dw_rate) 'Макс. вх. скор.',
- ROUND(AVG(dd.max_dw_rate)) 'Сред. вх. скор.',
- dp.profile_name 'Название профиля',
+ ao.tv 'Наличие ТВ',
+ dd.min_rate 'Мин. расч. вх. скор.',
+ dd.avg_rate 'Ср. расч. вх. скор.',
+ dd.max_rate 'Макс. расч. вх. скор.',
+ dp.profile_name 'Название профиля DSLAM',
  dp.up_limit 'Ограничение Upstream',
  dp.dw_limit 'Ограничение Downstream',
  ao.hostname 'Hostname',
  ao.board 'Board',
  ao.port 'Port' 
-FROM abon_onyma ao INNER JOIN data_dsl dd
- ON ao.hostname=dd.hostname
- AND ao.board=dd.board
- AND ao.port=dd.port
+FROM (
+ SELECT
+  hostname,
+  board,
+  port,
+  MIN(max_dw_rate) min_rate,
+  MAX(max_dw_rate) max_rate,
+  ROUND(AVG(max_dw_rate)) avg_rate
+ FROM
+  data_dsl
+ WHERE
+  datetime BETWEEN STR_TO_DATE('2018-10-17 00:00:00', '%Y-%m-%d %H:%i:%s')
+  AND STR_TO_DATE('2018-10-18 23:59:59', '%Y-%m-%d %H:%i:%s')
+ GROUP BY hostname, board, port
+ ) dd INNER JOIN abon_onyma ao 
+ ON dd.hostname=ao.hostname
+ AND dd.board=ao.board
+ AND dd.port=ao.port
  INNER JOIN data_profiles dp
   ON ao.hostname=dp.hostname
   AND ao.board=dp.board
   AND ao.port=dp.port
-WHERE
- dd.datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -1 DAY)
- AND dd.max_dw_rate IS NOT NULL
- AND ao.servis_point LIKE '%изобильный%'
+WHERE 
+ dd.max_rate IS NOT NULL
 GROUP BY ao.account_name
-ORDER BY ao.hostname, ao.board, ao.port
+ORDER BY ao.servis_point, ao.hostname, ao.board, ao.port
+INTO OUTFILE '/var/lib/mysql-files/Krai.csv' FIELDS TERMINATED BY ';' ;
