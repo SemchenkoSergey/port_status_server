@@ -15,17 +15,23 @@ import warnings
 warnings.filterwarnings("ignore")
 
 DslamHuawei.LOGGING = True
-
+DslamHuawei.LINE_PROFILE = True
 
 def load_dslams():
+    #
+    # Загрузка списка dslam
+    #
     try:
         with open('resources{}dslams.db'.format(os.sep), 'br') as file_load:
             return pickle.load(file_load)
     except:
         return []
-    
+
+
 def connect_dslam(host):
-    #Создание объекта dslam
+    #
+    # Создание объекта dslam
+    #
     ip = host[0]
     model = host[1]
     DEVNULL = os.open(os.devnull, os.O_WRONLY)
@@ -41,7 +47,7 @@ def connect_dslam(host):
             return None
     elif model == '5616':
         try:
-            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login, Settings.password, 20)
+            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login_5616, Settings.password_5616, 20)
         except:
             print('{} не удалось подключиться'.format(ip))
             return None
@@ -49,29 +55,30 @@ def connect_dslam(host):
         return None
     return dslam
 
-def run(host):    
+def run(host):
+    #
+    # Обработка DSLAM и запись данных в базу
+    #
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
-    
     dslam = connect_dslam(host)
     if dslam is None:
         return (0, host)
-    command = "INSERT IGNORE INTO data_dsl (hostname, board, port, up_snr, dw_snr, up_att, dw_att, max_up_rate, max_dw_rate, up_rate, dw_rate, datetime) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-    params = []      
+    command = "INSERT IGNORE INTO data_profiles (hostname, board, port, profile_name, up_limit, dw_limit) VALUES (%s, %s, %s, %s, %s, %s)"
+    params = []    
     hostname = dslam.get_info()['hostname']
     ip = dslam.get_info()['ip']
+    if dslam.adsl_line_profile == {}:
+        print('{}({}) не удалось получить список профайлов'.format(hostname, ip))    
     for board in dslam.boards:
-        current_time = datetime.datetime.now()
-        paramConnectBoard = dslam.get_line_operation_board(board)
-        if not paramConnectBoard:
+        ports = dslam.get_adsl_line_profile_board(board)
+        if not ports:
             continue
-        for port in range(0,dslam.ports):
-            connect_param = paramConnectBoard[port]
-            if connect_param['up_snr'] == '-':
-                param = (hostname, board, port, None, None, None, None, None, None, None, None, current_time.strftime('%Y-%m-%d %H:%M:%S'))
-            else:
-                param = (hostname, board, port, connect_param['up_snr'], connect_param['dw_snr'], connect_param['up_att'], connect_param['dw_att'], connect_param['max_up_rate'], connect_param['max_dw_rate'], connect_param['up_rate'], connect_param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))
-            params.append(param)
+        for port, idx_profile in enumerate(ports):
+            if dslam.adsl_line_profile.get(idx_profile) is None:
+                continue
+            params.append((hostname, board, port, dslam.adsl_line_profile[idx_profile]['profile_name'], dslam.adsl_line_profile[idx_profile]['up_rate'], dslam.adsl_line_profile[idx_profile]['dw_rate']))
+    #print('Занесение данных об профайлах DSLAM {} в таблицу data_profiles'.format(hostname))
     SQL.modify_table_many(cursor, command, params)
     connect.close()
     del dslam
@@ -79,23 +86,25 @@ def run(host):
 
 
 def main():
+    #
+    # Запуск программы
+    #
     print('Время запуска: {}'.format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
     # Загрузка списка DSLAM
     dslams = load_dslams()
     if len(dslams) == 0:
         print('Не найден dslams.db!')
-        return    
+        return
+    # Обнуление таблицы
+    SQL.create_data_profiles(drop=True)
     dslam_ok = 0
     dslam_repeat = []
     dslam_bad = []
     # Создание таблицы(если еще нет)
     SQL.create_data_dsl()
     # Запуск основного кода
-    #current_time = datetime.datetime.now()
-    #arguments = [(current_time, host) for host in dslams]
     with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
-        results = executor.map(run, dslams)
-    
+        results = executor.map(run, dslams)  
     for result in results:
         if result is None:
             continue
@@ -129,13 +138,6 @@ def main():
     print('Обработано: {}'.format(dslam_ok))
     print('Необработанные: {}'.format(', '.join(dslam_bad)))
     print('---------\n')
-            
-    # Удаление старых записей (раз в день в промежутке между 0 и 2 часами)
-    hour_now = datetime.datetime.now().hour
-    if (hour_now >= 0) and (hour_now < 2):
-        options = {'table_name': 'data_dsl',
-                   'str1': 'CAST(datetime AS DATE) <= DATE_ADD(CURRENT_DATE(), INTERVAL -{} DAY)'.format(Settings.days)}
-        SQL.delete_table(**options)
 
 
 

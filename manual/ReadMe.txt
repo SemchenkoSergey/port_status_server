@@ -94,3 +94,17 @@ Argus:
 mysql -u operator -poperator inet
 
 Скопировать любой SQL-запрос из файла и вставить в окно терминала. Дождаться вывода.
+
+
+Для работы некоторых запросов:
+1. в терминале
+sudo nano /etc/mysql/my.cnf
+2. в конце файла дописываем строки
+[mysqld]
+sql_mode="NO_ENGINE_SUBSTITUTION"
+3. сохраняем файл и restart mysql
+sudo systemctl restart mysql
+
+Выгрузка запроса в CSV-файл:
+SELECT * FROM name_table
+INTO OUTFILE '/tmp/name_file.csv' FIELDS TERMINATED BY ';' ;
