@@ -56,23 +56,27 @@ def run(host):
     dslam = connect_dslam(host)
     if dslam is None:
         return (0, host)
-    command = "INSERT IGNORE INTO data_dsl (hostname, board, port, up_snr, dw_snr, up_att, dw_att, max_up_rate, max_dw_rate, up_rate, dw_rate, datetime) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-    params = []      
     hostname = dslam.get_info()['hostname']
     ip = dslam.get_info()['ip']
     for board in dslam.boards:
         current_time = datetime.datetime.now()
         paramConnectBoard = dslam.get_line_operation_board(board)
-        if not paramConnectBoard:
+        if paramConnectBoard == False:
             continue
         for port in range(0,dslam.ports):
-            connect_param = paramConnectBoard[port]
-            if connect_param['up_snr'] == '-':
-                param = (hostname, board, port, None, None, None, None, None, None, None, None, current_time.strftime('%Y-%m-%d %H:%M:%S'))
-            else:
-                param = (hostname, board, port, connect_param['up_snr'], connect_param['dw_snr'], connect_param['up_att'], connect_param['dw_att'], connect_param['max_up_rate'], connect_param['max_dw_rate'], connect_param['up_rate'], connect_param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))
-            params.append(param)
-    SQL.modify_table_many(cursor, command, params)
+            param = paramConnectBoard[port]
+            if param['up_snr'] == '-':
+                options = {'cursor': cursor,
+                           'table_name': 'data_dsl',
+                           'str1': 'hostname, board, port, datetime',
+                           'str2': '"{}", {}, {}, "{}"'.format(hostname, board, port, current_time.strftime('%Y-%m-%d %H:%M:%S'))}
+                SQL.insert_table(**options)
+                continue
+            options = {'cursor': cursor,
+                       'table_name': 'data_dsl',
+                       'str1': 'hostname, board, port, up_snr, dw_snr, up_att, dw_att, max_up_rate, max_dw_rate, up_rate, dw_rate, datetime',
+                       'str2': '"{}", {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, "{}"'.format(hostname, board, port, param['up_snr'], param['dw_snr'], param['up_att'], param['dw_att'], param['max_up_rate'], param['max_dw_rate'], param['up_rate'], param['dw_rate'], current_time.strftime('%Y-%m-%d %H:%M:%S'))}
+            SQL.insert_table(**options)
     connect.close()
     del dslam
     return (1, host)
@@ -130,12 +134,10 @@ def main():
     print('Необработанные: {}'.format(', '.join(dslam_bad)))
     print('---------\n')
             
-    # Удаление старых записей (раз в день в промежутке между 0 и 2 часами)
-    hour_now = datetime.datetime.now().hour
-    if (hour_now >= 0) and (hour_now < 2):
-        options = {'table_name': 'data_dsl',
-                   'str1': 'CAST(datetime AS DATE) <= DATE_ADD(CURRENT_DATE(), INTERVAL -{} DAY)'.format(Settings.days)}
-        SQL.delete_table(**options)
+    # Удаление старых записей
+    options = {'table_name': 'data_dsl',
+               'str1': 'CAST(datetime AS DATE) < DATE_ADD(CURRENT_DATE(), INTERVAL -{} DAY)'.format(Settings.days)}
+    SQL.delete_table(**options)
 
 
 

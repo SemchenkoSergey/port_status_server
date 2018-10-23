@@ -15,7 +15,7 @@ def create_data_dsl(drop=False):
         table = '''
         CREATE TABLE IF NOT EXISTS data_dsl (
         id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-        hostname VARCHAR(200) NOT NULL,
+        hostname VARCHAR(50) NOT NULL,
         board TINYINT UNSIGNED NOT NULL,
         port TINYINT UNSIGNED NOT NULL,
         up_snr FLOAT(3,1),
@@ -50,6 +50,46 @@ def create_data_dsl(drop=False):
     connect.close()    
 
 
+def create_abon_dsl(drop=False):
+    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
+    cursor = connect.cursor()
+    try:
+        if drop:
+            cursor.execute('DROP TABLE IF EXISTS abon_dsl')
+        table = '''
+        CREATE TABLE IF NOT EXISTS abon_dsl (
+        phone_number CHAR(10) NOT NULL,
+        area VARCHAR(30),
+        locality VARCHAR(30),
+        street VARCHAR(30),
+        house_number VARCHAR(10),
+        apartment_number VARCHAR(10),
+        hostname VARCHAR(50),
+        board TINYINT UNSIGNED,
+        port TINYINT UNSIGNED,
+        account_name VARCHAR(20),
+        tv ENUM('yes', 'no') DEFAULT 'no',
+        valid ENUM('yes', 'no') DEFAULT 'no',
+        timestamp TIMESTAMP,
+        CONSTRAINT pk_abon_dsl PRIMARY KEY (phone_number)    
+        )'''
+        cursor.execute(table)
+    except:
+        pass
+    else:
+        cursor.execute('commit')
+    try:
+        command = '''
+         CREATE INDEX idx_account_name ON abon_dsl(account_name)
+        '''
+        cursor.execute(command)
+    except:
+        pass
+    else:
+        cursor.execute('commit')        
+    connect.close()
+    
+    
 def create_abon_onyma(drop=False):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
@@ -58,106 +98,40 @@ def create_abon_onyma(drop=False):
             cursor.execute('DROP TABLE IF EXISTS abon_onyma')
         table = '''
         CREATE TABLE IF NOT EXISTS abon_onyma (
-        account_name VARCHAR(50) NOT NULL,
-        phone_number CHAR(10),
-        contract VARCHAR(20),
-        servis_point VARCHAR(100),
-        address VARCHAR(500),
-        name VARCHAR(500),
-        tariff VARCHAR(500),
-        hostname VARCHAR(200),
-        board TINYINT UNSIGNED,
-        port TINYINT UNSIGNED,
-        mac_address CHAR(12),
-        tv ENUM('yes', 'no') DEFAULT 'no',
-        datetime DATETIME,
-        CONSTRAINT pk_abon_onyma PRIMARY KEY (account_name)
+        account_name VARCHAR(20) NOT NULL,
+        bill VARCHAR(15) NOT NULL,
+        dmid VARCHAR(15) NOT NULL,
+        tmid VARCHAR(15) NOT NULL,
+        CONSTRAINT pk_abon_onyma PRIMARY KEY (account_name)    
         )'''
         cursor.execute(table)
     except:
         pass
     else:
         cursor.execute('commit')
-        
-    try:
-        command = '''
-         CREATE INDEX idx_phone_number ON abon_onyma(phone_number)
-        '''
-        cursor.execute(command)
-        command = '''
-        CREATE INDEX idx_contract ON abon_onyma(contract)
-        '''
-        cursor.execute(command)        
-    except:
-        pass
-    else:
-        cursor.execute('commit')    
     connect.close()
 
 
-def create_abon_argus(drop=False):
+def create_data_sessions(drop=False):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
     try:
         if drop:
-            cursor.execute('DROP TABLE IF EXISTS abon_argus')
+            cursor.execute('DROP TABLE IF EXISTS data_sessions')
         table = '''
-        CREATE TABLE IF NOT EXISTS abon_argus (
-        phone_number CHAR(10) NOT NULL,
-        area VARCHAR(50),
-        locality VARCHAR(50),
-        street VARCHAR(50),
-        house_number VARCHAR(10),
-        apartment_number VARCHAR(10),
-        timestamp TIMESTAMP,
-        CONSTRAINT pk_abon_argus PRIMARY KEY (phone_number)    
+        CREATE TABLE IF NOT EXISTS data_sessions (
+        account_name VARCHAR(20),
+        date DATE,
+        count SMALLINT UNSIGNED,
+        CONSTRAINT pk_data_sessions PRIMARY KEY (account_name, date)
         )'''
         cursor.execute(table)
     except:
         pass
     else:
-        cursor.execute('commit')     
+        cursor.execute('commit')
     connect.close()
     
-
-def create_data_profiles(drop=False):
-    connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
-    cursor = connect.cursor()
-    try:
-        if drop:
-            cursor.execute('DROP TABLE IF EXISTS data_profiles')
-        table = '''
-        CREATE TABLE IF NOT EXISTS data_profiles (
-        hostname VARCHAR(200) NOT NULL,
-        board TINYINT UNSIGNED NOT NULL,
-        port TINYINT UNSIGNED NOT NULL,
-        profile_name VARCHAR(200) NOT NULL,
-        up_limit SMALLINT UNSIGNED,
-        dw_limit SMALLINT UNSIGNED,
-        timestamp TIMESTAMP,
-        CONSTRAINT pk_data_profiles PRIMARY KEY (hostname, board, port)
-        )'''
-        cursor.execute(table)
-    except:
-        pass
-    else:
-        cursor.execute('commit')
-        
-    try:
-        command = '''
-         CREATE INDEX idx_phone_number ON abon_onyma(phone_number)
-        '''
-        cursor.execute(command)
-        command = '''
-        CREATE INDEX idx_contract ON abon_onyma(contract)
-        '''
-        cursor.execute(command)        
-    except:
-        pass
-    else:
-        cursor.execute('commit')    
-    connect.close()
-
     
 def delete_table(table_name, str1):
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
@@ -202,19 +176,7 @@ def get_table_data(table_name, str1, str2):
     result = cursor.fetchall()
     connect.close()
     return result
-
-
-def modify_table_many(cursor, command, param):
-    #
-    # Множественное изменение таблицы
-    #
-    try:
-        result = cursor.executemany(command, param)
-    except Exception as ex:
-        print(ex)
-    finally:
-        cursor.execute('commit')
-        return result         
+        
 
 def insert_table(cursor, table_name, str1, str2):
     command = '''

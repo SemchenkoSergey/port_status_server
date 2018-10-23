@@ -112,8 +112,8 @@ def delete_files(files):
 
 
 def main():
-    # Просмотр файлов в директории input/dslams/
-    files = ['input' + os.sep + 'dslams' + os.sep + x for x in os.listdir('input' + os.sep + 'dslams')]
+    # Просмотр файлов в директории input/ip_list/
+    files = ['input' + os.sep + 'ip_list' + os.sep + x for x in os.listdir('input' + os.sep + 'ip_list')]
     if len(files) == 0:
         return    
     # Обработка файлов
