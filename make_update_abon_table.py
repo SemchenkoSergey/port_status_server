@@ -86,6 +86,27 @@ def get_area_code(area):
     return False
 
 
+def define_speed(tariff):
+    #
+    # Определение скорости по тарифному плану
+    #
+    re_speed_kb = re.compile(r'(\d+) ?[k|К]')
+    re_speed_mb = re.compile(r'(\d*\.?\d+) ?Мбит')    
+    tariff = tariff.replace(',', '.')
+    max_speed = 15 * 1024
+    max_tariffs = ('Все включено!.Город.UNLIM.Население (xDSL)', 'Нон-стоп max', '"Игровой"', 'ТРАФИК', 'max')
+    for check_tariff in max_tariffs:
+        if check_tariff.lower() in tariff.lower():
+            return max_speed
+    if re_speed_mb.search(tariff):
+        speed = int(float(re_speed_mb.search(tariff).group(1)) * 1024)
+    elif re_speed_kb.search(tariff):
+        speed = int(re_speed_kb.search(tariff).group(1))   
+    else:
+        speed = 0
+    return speed
+
+
 def parsing_make_abon_onyma(file_list):
     #
     # Функция обработки файла 'Список подключений ШПД + ТВ' и занесения данных в базу
@@ -118,28 +139,30 @@ def parsing_make_abon_onyma(file_list):
                     if row[23] == 'SSG-подключение':
                         # Определение учетного имени
                         account_name = row[21]
+                        speed = define_speed(row[26])
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff': row[26].replace('"', "'"), 'address': row[6].replace('"', "'"), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'")})
+                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[26].replace('"', "'"), 'tariff_speed': speed, 'address': row[6].replace('"', "'"), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'")})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(row[3])
         # Удаляю обработанный файл (так как нужен список, передаю список)
         delete_files([file])           
     # Занесение в базу данных
-    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, contract, servis_point, address, tariff, name) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, contract, servis_point, address, tariff_name, tariff_speed, name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     params = []
     for insert_phone in phones:
         for account in phones[insert_phone]:
             servis_point = account['servis_point']
             contract = account['contract']
             account_name = account['account_name']
-            tariff = account['tariff']
+            tariff_name = account['tariff_name']
+            tariff_speed = account['tariff_speed']
             address = account['address']
             name = account['name']
             if len(phones[insert_phone]) == 1:
-                params.append((account_name, insert_phone, contract, servis_point, address, tariff, name))
+                params.append((account_name, insert_phone, contract, servis_point, address, tariff_name, tariff_speed, name))
             else:
-                params.append((account_name, None, contract, servis_point, address, tariff, name))
+                params.append((account_name, None, contract, servis_point, address, tariff_name, tariff_speed, name))
     print('Занесение данных об абонентах в таблицу abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     command = "UPDATE IGNORE abon_onyma SET tv = 'yes' WHERE contract = %s"
