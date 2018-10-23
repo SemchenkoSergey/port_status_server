@@ -130,9 +130,10 @@ def main():
     print('Необработанные: {}'.format(', '.join(dslam_bad)))
     print('---------\n')
             
-    # Удаление старых записей (раз в день в промежутке между 0 и 2 часами)
+    # Удаление старых записей (раз в день в 0 часов)
     hour_now = datetime.datetime.now().hour
-    if (hour_now >= 0) and (hour_now < 2):
+    #if (hour_now >= 0) and (hour_now < 2):
+    if hour_now == 0:
         options = {'table_name': 'data_dsl',
                    'str1': 'CAST(datetime AS DATE) <= DATE_ADD(CURRENT_DATE(), INTERVAL -{} DAY)'.format(Settings.days)}
         SQL.delete_table(**options)
