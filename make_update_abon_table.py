@@ -142,7 +142,7 @@ def parsing_make_abon_onyma(file_list):
                         speed = define_speed(row[26])
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[26].replace('"', "'"), 'tariff_speed': speed, 'address': row[6].replace('"', "'"), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'")})
+                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[26].replace('"', "'").replace(';', " "), 'tariff_speed': speed, 'address': row[6].replace('"', "'").replace(';', " "), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'").replace(';', " ")})
                     elif row[23] == '[ЮТК] Сервис IPTV':
                         tv.append(row[3])
         # Удаляю обработанный файл (так как нужен список, передаю список)
