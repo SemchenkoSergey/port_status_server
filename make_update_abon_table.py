@@ -123,7 +123,7 @@ def parsing_make_abon_onyma(file_list):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')                    
             for row in reader:
-                if (row[41] != 'deleted') and (re.search(r'[xA]DSL', row[36])):
+                if (row[42] != 'deleted') and (re.search(r'[xA]DSL', row[39])):
                     area_code = get_area_code(row[1])
                     if area_code is False:
                         continue
@@ -136,14 +136,14 @@ def parsing_make_abon_onyma(file_list):
                             phone_number = '-'
                     else:
                         phone_number = '-'
-                    if row[23] == 'SSG-подключение':
+                    if row[24] == 'SSG-подключение':
                         # Определение учетного имени
-                        account_name = row[21]
-                        speed = define_speed(row[26])
+                        account_name = row[22]
+                        speed = define_speed(row[27])
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[26].replace('"', "'").replace(';', " "), 'tariff_speed': speed, 'address': row[6].replace('"', "'").replace(';', " "), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'").replace(';', " ")})
-                    elif row[23] == '[ЮТК] Сервис IPTV':
+                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[27].replace('"', "'").replace(';', " "), 'tariff_speed': speed, 'address': row[6].replace('"', "'").replace(';', " "), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'").replace(';', " ")})
+                    elif row[24] == '[ЮТК] Сервис IPTV':
                         tv.append(row[3])
         # Удаляю обработанный файл (так как нужен список, передаю список)
         delete_files([file])           
