@@ -118,7 +118,17 @@ def create_abon_argus(drop=False):
     except:
         pass
     else:
-        cursor.execute('commit')     
+        cursor.execute('commit')
+        
+    try:
+        command = '''
+         CREATE INDEX idx_port ON abon_argus(port)
+        '''
+        cursor.execute(command)
+    except:
+        pass
+    else:
+        cursor.execute('commit')    
     connect.close()
     
 

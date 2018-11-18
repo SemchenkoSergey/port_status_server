@@ -318,7 +318,7 @@ def parsing_make_abon_argus(file_list):
                     street = re.search(r'(?:.+(?:п|г|с|х|ст-ца|аул|аул)?\.?),\s+(.+?),\s+(?:.+),\s?кв\.', cell_address).group(1)    # улица
                     house_number = re.search(r'(\S+?)\s*,кв', cell_address).group(1)                                                # дом
                     apartment_number = re.search(r'кв.\s?(.*)', cell_address).group(1)                                              # квартира
-                    port = '{}-{}-{}'.format(row[num_hostname].strip(), re.search(r'\(Л\)\s+?-\s+?(.+)', row[num_board]).group(1), row[num_port].strip() )
+                    port = '{}-{}-{}'.format(row[num_hostname].strip().replace('=', '').replace('"', ''), re.search(r'\(Л\)\s+?-\s+?(.+)', row[num_board].replace('=', '').replace('"', '')).group(1), row[num_port].strip().replace('=', '').replace('"', ''))
                 except Exception as ex:
                     #print('-------------------------------')
                     #print(ex)
