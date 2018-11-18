@@ -110,6 +110,7 @@ def create_abon_argus(drop=False):
         street VARCHAR(50),
         house_number VARCHAR(10),
         apartment_number VARCHAR(10),
+        port VARCHAR(100),
         timestamp TIMESTAMP,
         CONSTRAINT pk_abon_argus PRIMARY KEY (phone_number)    
         )'''

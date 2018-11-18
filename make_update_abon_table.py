@@ -261,7 +261,7 @@ def parsing_make_abon_argus(file_list):
     
     # Подготовка регулярного выражения
     re_phone = re.compile(r'\((\d+)\)(.+)')         # Код, телефон
-    command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number) VALUES (%s, %s, %s, %s, %s, %s)"
+    command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number, port) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     params = []
     # Выбор типа отчета
     if Settings.argus_type == 1:
@@ -273,9 +273,13 @@ def parsing_make_abon_argus(file_list):
     elif Settings.argus_type == 2:
         report_len = 11
         num_model = 2
+        num_hostname = 3
         num_board = 5
+        num_port = 6
         num_address = 7
         num_phone = 10
+
+        
     else:
         print('Неизвестный тип отчета АРГУС')
         return
@@ -314,6 +318,7 @@ def parsing_make_abon_argus(file_list):
                     street = re.search(r'(?:.+(?:п|г|с|х|ст-ца|аул|аул)?\.?),\s+(.+?),\s+(?:.+),\s?кв\.', cell_address).group(1)    # улица
                     house_number = re.search(r'(\S+?)\s*,кв', cell_address).group(1)                                                # дом
                     apartment_number = re.search(r'кв.\s?(.*)', cell_address).group(1)                                              # квартира
+                    port = '{}-{}-{}'.format(row[num_hostname].strip(), re.search(r'\(Л\)\s+?-\s+?(.+)', row[num_board]).group(1), row[num_port].strip() )
                 except Exception as ex:
                     #print('-------------------------------')
                     #print(ex)
@@ -325,7 +330,7 @@ def parsing_make_abon_argus(file_list):
                 ## Вставка данных в таблицу              
                 if len(phone_number) > 10:
                     continue
-                params.append((phone_number, area, locality, street, house_number, apartment_number))
+                params.append((phone_number, area, locality, street, house_number, apartment_number, port))
     print('Занесение данных об абонентах в таблицу abon_argus...')
     SQL.modify_table_many(cursor, command, params)
     connect.close()
