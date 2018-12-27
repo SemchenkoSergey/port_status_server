@@ -155,3 +155,10 @@ WHERE
  AND board=1
  AND port=49
 ORDER BY datetime;
+
+
+--- Если перестали работать индексы ---
+OPTIMIZE TABLE abon_onyma;
+OPTIMIZE TABLE abon_argus;
+OPTIMIZE TABLE data_profiles;
+OPTIMIZE TABLE data_dsl;
