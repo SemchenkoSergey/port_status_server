@@ -123,7 +123,7 @@ def parsing_make_abon_onyma(file_list):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')                    
             for row in reader:
-                if (row[42] != 'deleted') and (re.search(r'[xA]DSL', row[39])):
+                if (row[43] != 'deleted') and (re.search(r'[xA]DSL', row[40])):
                     area_code = get_area_code(row[1])
                     if area_code is False:
                         continue
