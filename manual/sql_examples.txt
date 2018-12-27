@@ -42,7 +42,7 @@ SELECT
  aa.phone_number 'Номер тел.',
  ROUND(AVG(dd.max_up_rate)) 'Ср. исх. скор.',
  ROUND(AVG(dd.max_dw_rate)) 'Ср. вх. скор.',
- ao.tariff 'Тарифф'
+ ao.tariff_name 'Тарифф'
 FROM (
  SELECT * 
  FROM data_dsl
@@ -157,140 +157,8 @@ WHERE
 ORDER BY datetime;
 
 
---- Для коммерческого блока ---
-
-SELECT
- ao.servis_point 'Пункт продаж',
- ao.phone_number 'Номер тел.',
- ao.contract 'Номер договора',
- ao.account_name 'Учетное имя',
- ao.address 'Адрес',
- ao.name 'Ф.И.О.',
- ao.tariff 'Тариф',
- ao.tv 'Наличие ТВ',
- dd.min_rate 'Мин. расч. вх. скор.',
- dd.avg_rate 'Ср. расч. вх. скор.',
- dd.max_rate 'Макс. расч. вх. скор.',
- dp.profile_name 'Название профиля DSLAM',
- dp.up_limit 'Ограничение Upstream',
- dp.dw_limit 'Ограничение Downstream',
- ao.hostname 'Hostname',
- ao.board 'Board',
- ao.port 'Port' 
-FROM (
- SELECT
-  hostname,
-  board,
-  port,
-  MIN(max_dw_rate) min_rate,
-  MAX(max_dw_rate) max_rate,
-  ROUND(AVG(max_dw_rate)) avg_rate
- FROM
-  data_dsl
- WHERE
-  datetime BETWEEN STR_TO_DATE('2018-10-17 00:00:00', '%Y-%m-%d %H:%i:%s')
-  AND STR_TO_DATE('2018-10-18 23:59:59', '%Y-%m-%d %H:%i:%s')
- GROUP BY hostname, board, port
- ) dd INNER JOIN abon_onyma ao 
- ON dd.hostname=ao.hostname
- AND dd.board=ao.board
- AND dd.port=ao.port
- INNER JOIN data_profiles dp
-  ON ao.hostname=dp.hostname
-  AND ao.board=dp.board
-  AND ao.port=dp.port
-WHERE 
- dd.max_rate IS NOT NULL
-GROUP BY ao.account_name
-ORDER BY ao.servis_point, ao.hostname, ao.board, ao.port
-INTO OUTFILE '/var/lib/mysql-files/Krai.csv' FIELDS TERMINATED BY ';' ;
-
-
---- Для коммерческого блока ---
-(со статистикой скорости за три дня)
-
-SELECT
- ao.servis_point 'Пункт продаж',
- ao.phone_number 'Номер тел.',
- ao.contract 'Номер договора',
- ao.account_name 'Учетное имя',
- ao.address 'Адрес',
- ao.name 'Ф.И.О.',
- ao.tariff 'Тариф',
- ao.tv 'Наличие ТВ',
- d3.min_rate 'Мин. скор. 3д',
- d3.avg_rate 'Ср. скор. 3д',
- d3.max_rate 'Макс. скор. 3д',
- d2.min_rate 'Мин. скор. 2д',
- d2.avg_rate 'Ср. скор. 2д',
- d2.max_rate 'Макс. скор. 2д',
- d1.min_rate 'Мин. скор. 1д',
- d1.avg_rate 'Ср. скор. 1д',
- d1.max_rate 'Макс. скор. 1д',
- dp.profile_name 'Название профиля DSLAM',
- dp.up_limit 'Ограничение Upstream',
- dp.dw_limit 'Ограничение Downstream',
- ao.hostname 'Hostname',
- ao.board 'Board',
- ao.port 'Port' 
-FROM (
- SELECT
-  hostname,
-  board,
-  port,
-  MIN(max_dw_rate) min_rate,
-  MAX(max_dw_rate) max_rate,
-  ROUND(AVG(max_dw_rate)) avg_rate
- FROM
-  data_dsl
- WHERE
-  datetime BETWEEN STR_TO_DATE('2018-10-19 00:00:00', '%Y-%m-%d %H:%i:%s')
-  AND STR_TO_DATE('2018-10-19 23:59:59', '%Y-%m-%d %H:%i:%s')
- GROUP BY hostname, board, port
- ) d3 INNER JOIN (
- SELECT
-  hostname,
-  board,
-  port,
-  MIN(max_dw_rate) min_rate,
-  MAX(max_dw_rate) max_rate,
-  ROUND(AVG(max_dw_rate)) avg_rate
- FROM
-  data_dsl
- WHERE
-  datetime BETWEEN STR_TO_DATE('2018-10-20 00:00:00', '%Y-%m-%d %H:%i:%s')
-  AND STR_TO_DATE('2018-10-20 23:59:59', '%Y-%m-%d %H:%i:%s')
- GROUP BY hostname, board, port
- ) d2 ON d3.hostname=d2.hostname
-  AND d3.board=d2.board
-  AND d3.port=d2.port
- INNER JOIN (
- SELECT
-  hostname,
-  board,
-  port,
-  MIN(max_dw_rate) min_rate,
-  MAX(max_dw_rate) max_rate,
-  ROUND(AVG(max_dw_rate)) avg_rate
- FROM
-  data_dsl
- WHERE
-  datetime BETWEEN STR_TO_DATE('2018-10-21 00:00:00', '%Y-%m-%d %H:%i:%s')
-  AND STR_TO_DATE('2018-10-21 23:59:59', '%Y-%m-%d %H:%i:%s')
- GROUP BY hostname, board, port
- ) d1 ON d2.hostname=d1.hostname
-  AND d2.board=d1.board
-  AND d2.port=d1.port 
- INNER JOIN abon_onyma ao 
- ON d1.hostname=ao.hostname
- AND d1.board=ao.board
- AND d1.port=ao.port
- INNER JOIN data_profiles dp
-  ON ao.hostname=dp.hostname
-  AND ao.board=dp.board
-  AND ao.port=dp.port
-WHERE 
- d3.max_rate IS NOT NULL AND d2.max_rate IS NOT NULL AND d1.max_rate IS NOT NULL
-GROUP BY ao.account_name
-ORDER BY ao.servis_point, ao.hostname, ao.board, ao.port
-INTO OUTFILE '/var/lib/mysql-files/Krai.csv' FIELDS TERMINATED BY ';' ;
+--- Если перестали работать индексы ---
+OPTIMIZE TABLE abon_onyma;
+OPTIMIZE TABLE abon_argus;
+OPTIMIZE TABLE data_profiles;
+OPTIMIZE TABLE data_dsl;

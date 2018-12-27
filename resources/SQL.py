@@ -64,7 +64,8 @@ def create_abon_onyma(drop=False):
         servis_point VARCHAR(100),
         address VARCHAR(500),
         name VARCHAR(500),
-        tariff VARCHAR(500),
+        tariff_name VARCHAR(500),
+        tariff_speed SMALLINT UNSIGNED,
         hostname VARCHAR(200),
         board TINYINT UNSIGNED,
         port TINYINT UNSIGNED,
@@ -109,6 +110,7 @@ def create_abon_argus(drop=False):
         street VARCHAR(50),
         house_number VARCHAR(10),
         apartment_number VARCHAR(10),
+        port VARCHAR(100),
         timestamp TIMESTAMP,
         CONSTRAINT pk_abon_argus PRIMARY KEY (phone_number)    
         )'''
@@ -116,7 +118,17 @@ def create_abon_argus(drop=False):
     except:
         pass
     else:
-        cursor.execute('commit')     
+        cursor.execute('commit')
+        
+    try:
+        command = '''
+         CREATE INDEX idx_port ON abon_argus(port)
+        '''
+        cursor.execute(command)
+    except:
+        pass
+    else:
+        cursor.execute('commit')    
     connect.close()
     
 

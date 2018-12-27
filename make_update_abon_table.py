@@ -86,6 +86,27 @@ def get_area_code(area):
     return False
 
 
+def define_speed(tariff):
+    #
+    # Определение скорости по тарифному плану
+    #
+    re_speed_kb = re.compile(r'(\d+) ?[k|К]')
+    re_speed_mb = re.compile(r'(\d*\.?\d+) ?Мбит')    
+    tariff = tariff.replace(',', '.')
+    max_speed = 15 * 1024
+    max_tariffs = ('Все включено!.Город.UNLIM.Население (xDSL)', 'Нон-стоп max', '"Игровой"', 'ТРАФИК', 'max')
+    for check_tariff in max_tariffs:
+        if check_tariff.lower() in tariff.lower():
+            return max_speed
+    if re_speed_mb.search(tariff):
+        speed = int(float(re_speed_mb.search(tariff).group(1)) * 1024)
+    elif re_speed_kb.search(tariff):
+        speed = int(re_speed_kb.search(tariff).group(1))   
+    else:
+        speed = 0
+    return speed
+
+
 def parsing_make_abon_onyma(file_list):
     #
     # Функция обработки файла 'Список подключений ШПД + ТВ' и занесения данных в базу
@@ -102,7 +123,7 @@ def parsing_make_abon_onyma(file_list):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader(f, delimiter=';')                    
             for row in reader:
-                if (row[41] != 'deleted') and (re.search(r'[xA]DSL', row[36])):
+                if (row[43] != 'deleted') and (re.search(r'[xA]DSL', row[40])):
                     area_code = get_area_code(row[1])
                     if area_code is False:
                         continue
@@ -115,31 +136,33 @@ def parsing_make_abon_onyma(file_list):
                             phone_number = '-'
                     else:
                         phone_number = '-'
-                    if row[23] == 'SSG-подключение':
+                    if row[24] == 'SSG-подключение':
                         # Определение учетного имени
-                        account_name = row[21]
+                        account_name = row[22]
+                        speed = define_speed(row[27])
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff': row[26].replace('"', "'"), 'address': row[6].replace('"', "'"), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'")})
-                    elif row[23] == '[ЮТК] Сервис IPTV':
+                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[27].replace('"', "'").replace(';', " "), 'tariff_speed': speed, 'address': row[6].replace('"', "'").replace(';', " "), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'").replace(';', " ")})
+                    elif row[24] == '[ЮТК] Сервис IPTV':
                         tv.append(row[3])
         # Удаляю обработанный файл (так как нужен список, передаю список)
         delete_files([file])           
     # Занесение в базу данных
-    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, contract, servis_point, address, tariff, name) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, contract, servis_point, address, tariff_name, tariff_speed, name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
     params = []
     for insert_phone in phones:
         for account in phones[insert_phone]:
             servis_point = account['servis_point']
             contract = account['contract']
             account_name = account['account_name']
-            tariff = account['tariff']
+            tariff_name = account['tariff_name']
+            tariff_speed = account['tariff_speed']
             address = account['address']
             name = account['name']
             if len(phones[insert_phone]) == 1:
-                params.append((account_name, insert_phone, contract, servis_point, address, tariff, name))
+                params.append((account_name, insert_phone, contract, servis_point, address, tariff_name, tariff_speed, name))
             else:
-                params.append((account_name, None, contract, servis_point, address, tariff, name))
+                params.append((account_name, None, contract, servis_point, address, tariff_name, tariff_speed, name))
     print('Занесение данных об абонентах в таблицу abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     command = "UPDATE IGNORE abon_onyma SET tv = 'yes' WHERE contract = %s"
@@ -238,7 +261,7 @@ def parsing_make_abon_argus(file_list):
     
     # Подготовка регулярного выражения
     re_phone = re.compile(r'\((\d+)\)(.+)')         # Код, телефон
-    command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number) VALUES (%s, %s, %s, %s, %s, %s)"
+    command = "INSERT IGNORE INTO abon_argus (phone_number, area, locality, street, house_number, apartment_number, port) VALUES (%s, %s, %s, %s, %s, %s, %s)"
     params = []
     # Выбор типа отчета
     if Settings.argus_type == 1:
@@ -250,9 +273,13 @@ def parsing_make_abon_argus(file_list):
     elif Settings.argus_type == 2:
         report_len = 11
         num_model = 2
+        num_hostname = 3
         num_board = 5
+        num_port = 6
         num_address = 7
         num_phone = 10
+
+        
     else:
         print('Неизвестный тип отчета АРГУС')
         return
@@ -291,6 +318,7 @@ def parsing_make_abon_argus(file_list):
                     street = re.search(r'(?:.+(?:п|г|с|х|ст-ца|аул|аул)?\.?),\s+(.+?),\s+(?:.+),\s?кв\.', cell_address).group(1)    # улица
                     house_number = re.search(r'(\S+?)\s*,кв', cell_address).group(1)                                                # дом
                     apartment_number = re.search(r'кв.\s?(.*)', cell_address).group(1)                                              # квартира
+                    port = '{}-{}-{}'.format(row[num_hostname].strip().replace('=', '').replace('"', ''), re.search(r'\(Л\)\s+?-\s+?(.+)', row[num_board].replace('=', '').replace('"', '')).group(1), row[num_port].strip().replace('=', '').replace('"', ''))
                 except Exception as ex:
                     #print('-------------------------------')
                     #print(ex)
@@ -302,7 +330,7 @@ def parsing_make_abon_argus(file_list):
                 ## Вставка данных в таблицу              
                 if len(phone_number) > 10:
                     continue
-                params.append((phone_number, area, locality, street, house_number, apartment_number))
+                params.append((phone_number, area, locality, street, house_number, apartment_number, port))
     print('Занесение данных об абонентах в таблицу abon_argus...')
     SQL.modify_table_many(cursor, command, params)
     connect.close()
