@@ -90,8 +90,8 @@ def define_speed(tariff):
     #
     # Определение скорости по тарифному плану
     #
-    re_speed_kb = re.compile(r'(\d+) ?[k|К]')
-    re_speed_mb = re.compile(r'(\d*\.?\d+) ?Мбит')    
+    re_speed_kb = re.compile(r'(\d+) ?(kbps\.|k\.|Кбит)')
+    re_speed_mb = re.compile(r'((\d\.)?\d+) ?(Мбит/|Мб/|Mbps)')    
     tariff = tariff.replace(',', '.')
     max_speed = 15 * 1024
     max_tariffs = ('Все включено!.Город.UNLIM.Население (xDSL)', 'Нон-стоп max', '"Игровой"', 'ТРАФИК', 'max')
