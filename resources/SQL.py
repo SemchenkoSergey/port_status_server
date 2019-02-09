@@ -60,6 +60,7 @@ def create_abon_onyma(drop=False):
         CREATE TABLE IF NOT EXISTS abon_onyma (
         account_name VARCHAR(50) NOT NULL,
         phone_number CHAR(10),
+        mobile_phone_number CHAR(11),
         contract VARCHAR(20),
         servis_point VARCHAR(100),
         address VARCHAR(500),

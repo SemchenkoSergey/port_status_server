@@ -137,18 +137,21 @@ def parsing_make_abon_onyma(file_list):
                     else:
                         phone_number = '-'
                     if row[24] == 'SSG-подключение':
+                        # Мобильный телефон
+                        mobile_phone_cell = row[8].replace(' ', '').replace('-', '')
+                        mobile_phone_number = mobile_phone_cell if mobile_phone_cell != '' else None
                         # Определение учетного имени
                         account_name = row[22]
                         speed = define_speed(row[27])
                         if phone_number not in phones:
                             phones[phone_number] = []
-                        phones[phone_number].append({'account_name': account_name, 'tariff_name': row[27].replace('"', "'").replace(';', " "), 'tariff_speed': speed, 'address': row[6].replace('"', "'").replace(';', " "), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'").replace(';', " ")})
+                        phones[phone_number].append({'account_name': account_name, 'mobile_phone_number': mobile_phone_number, 'tariff_name': row[27].replace('"', "'").replace(';', " "), 'tariff_speed': speed, 'address': row[6].replace('"', "'").replace(';', " "), 'servis_point': row[1], 'contract': row[3], 'name': row[5].replace('"', "'").replace(';', " ")})
                     elif row[24] == '[ЮТК] Сервис IPTV':
                         tv.append(row[3])
         # Удаляю обработанный файл (так как нужен список, передаю список)
         delete_files([file])           
     # Занесение в базу данных
-    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, contract, servis_point, address, tariff_name, tariff_speed, name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+    command = "INSERT IGNORE INTO abon_onyma (account_name, phone_number, mobile_phone_number, contract, servis_point, address, tariff_name, tariff_speed, name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
     params = []
     for insert_phone in phones:
         for account in phones[insert_phone]:
@@ -159,10 +162,11 @@ def parsing_make_abon_onyma(file_list):
             tariff_speed = account['tariff_speed']
             address = account['address']
             name = account['name']
+            mobile_phone_number = account['mobile_phone_number']
             if len(phones[insert_phone]) == 1:
-                params.append((account_name, insert_phone, contract, servis_point, address, tariff_name, tariff_speed, name))
+                params.append((account_name, insert_phone, mobile_phone_number, contract, servis_point, address, tariff_name, tariff_speed, name))
             else:
-                params.append((account_name, None, contract, servis_point, address, tariff_name, tariff_speed, name))
+                params.append((account_name, None, mobile_phone_number, contract, servis_point, address, tariff_name, tariff_speed, name))
     print('Занесение данных об абонентах в таблицу abon_onyma...')
     SQL.modify_table_many(cursor, command, params)
     command = "UPDATE IGNORE abon_onyma SET tv = 'yes' WHERE contract = %s"
