@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 import warnings
 warnings.filterwarnings("ignore")
 
-#DslamHuawei.LOGGING = True
+DslamHuawei.LOGGING = True
 
 
 def load_dslams():
