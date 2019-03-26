@@ -13,7 +13,7 @@ import warnings
 
 warnings.filterwarnings("ignore")
 
-DslamHuawei.LOGGING = True
+#DslamHuawei.LOGGING = True
 
 def generate_dslams(files):
     dslams = []

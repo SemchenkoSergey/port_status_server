@@ -2,19 +2,20 @@
 # coding: utf8
 
 import datetime
-import time
-import MySQLdb
-import os
-import pickle
-import subprocess
-from resources import Settings
-from resources import DslamHuawei
-from resources import SQL
-from concurrent.futures import ThreadPoolExecutor
-import warnings
+import time 
+import MySQLdb 
+import os 
+import pickle 
+import subprocess 
+from resources import Settings 
+from resources import DslamHuawei 
+from resources import SQL 
+from concurrent.futures import ThreadPoolExecutor 
+import warnings 
+
 warnings.filterwarnings("ignore")
 
-DslamHuawei.LOGGING = True
+#DslamHuawei.LOGGING = True 
 DslamHuawei.LINE_PROFILE = True
 
 def load_dslams():
@@ -47,7 +48,7 @@ def connect_dslam(host):
             return None
     elif model == '5616':
         try:
-            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login_5616, Settings.password_5616, 20)
+            dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login, Settings.password, 20)
         except:
             print('{} не удалось подключиться'.format(ip))
             return None
@@ -121,7 +122,7 @@ def main():
         time.sleep(60 * 5)
         
         # Повторная обработка DSLAM
-        with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             results = executor.map(run, dslam_repeat)
         
         for result in results:
