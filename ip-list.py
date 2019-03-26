@@ -15,8 +15,8 @@ warnings.filterwarnings("ignore")
 
 #DslamHuawei.LOGGING = True
 
-def generate_dslams(files):
-    dslams = []
+def get_dslams_ip(files):
+    dslams_ip = []
     for file in files:
         if file.split('.')[-1] != 'csv':
             continue
@@ -34,13 +34,9 @@ def generate_dslams(files):
                 ip = row[6].replace('=', '').replace('"', '')
                 if ip == '':
                     continue
-                if model == 'Huawei MA 5616':
-                    dslams.append((ip, '5616'))
-                elif model == 'Huawei MA 5600':
-                    dslams.append((ip, '5600'))
-    with open('resources{}dslams.db'.format(os.sep), 'bw') as file_dump:
-            pickle.dump(dslams, file_dump)
-    return len(dslams)
+                if (model == 'Huawei MA 5616') or (model == 'Huawei MA 5600'):
+                    dslams_ip.append(ip)
+    return dslams_ip
 
 
 def load_dslams():
@@ -51,60 +47,40 @@ def load_dslams():
         return []
 
 
-def test_dslam(dslam, out):
-    response = subprocess.call('ping -c 3 {}'.format(dslam[0]), shell='True', stdout=out, stderr=subprocess.STDOUT)
+def test_dslam(ip, out):
+    response = subprocess.call('ping -c 3 {}'.format(ip), shell='True', stdout=out, stderr=subprocess.STDOUT)
     if response == 0:
         return True
     else:
         return False
 
-def connect_dslam(host, default=False):
+def connect_dslam(ip):
     #Создание объекта dslam
-    ip = host[0]
-    model = host[1]
-    if model == '5600':
-        try:
-            if default:
-                dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login_5600, Settings.password_5600, 20)
-            else:
-                dslam = DslamHuawei.DslamHuawei5600(ip, Settings.login, Settings.password, 20)
-        except:
-            return None
-    elif model == '5616':
-        try:
-            if default:
-                dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login_5616, Settings.password_5616, 20)
-            else:
-                dslam = DslamHuawei.DslamHuawei5616(ip, Settings.login, Settings.password, 20)
-        except:
-            return None
+    try:
+        dslam = DslamHuawei.DslamHuawei(ip, Settings.login, Settings.password, 20)
+    except:
+        return None
+    else:
+        return dslam
+    
+
+def check_device_type(arguments):
+    ip = arguments[0]
+    out = arguments[1]
+    if not test_dslam(ip, out):
+        return None
+    dslam = connect_dslam(ip)
+    if dslam is None:
+        return None
+    device_type = dslam.get_device_type()
+    del dslam
+    if device_type == '5600':
+        return (ip, '5600')
+    elif device_type == '5616':
+        return (ip, '5616')
     else:
         return None
-    return dslam
-
-def test_username(arguments):
-    # Проверка логина/пароля на DSLAM
-    host = arguments[0]
-    out = arguments[1]
-    if not test_dslam(host, out):
-        return (host[0], '', '')
-    dslam = connect_dslam(host)
-    if dslam is None:
-        dslam = connect_dslam(host, default=True)
-        if dslam is None:
-            return ('', host[0], '')
-        else:
-            dslam.execute_command('config', short=True)
-            dslam.execute_command('pitp enable pmode', short=True)
-            dslam.execute_command('quit', short=True)
-            result = dslam.add_user('script_profile', Settings.login, Settings.password)
-            if result:
-                del dslam
-                return ('', '', host[0])
-            else:
-                print('Не удалось создать юзера на {}'.format(host[0]))
-                del dslam
-
+    
 
 def delete_files(files):
     for file in files:
@@ -118,38 +94,29 @@ def main():
         return    
     # Обработка файлов
     print("Запуск программы: {}\n".format(datetime.datetime.now().strftime('%Y-%m-%d %H:%M')))
-    count = generate_dslams(files)
-    print('Обнаружено DSLAM: {}'.format(count))
-    #dslams = load_dslams()
-    #for idx, dslam in enumerate(dslams):
-        #print('{}: {}'.format(idx, dslam))
-    #print()
+    dslams_ip = get_dslams_ip(files)
+    print('Обнаружено DSLAM: {}'.format(len(dslams_ip)))
     delete_files(files)
     
-    # Проверка доступности DSLAM и учетного имени
-    print('Проверка учетных имен на DSLAM...')
+    # Проверка доступности и типов DSLAM
+    print('Проверка типов DSLAM...')
     DEVNULL = os.open(os.devnull, os.O_WRONLY)
-    dslam_unavailable = []
-    dslam_wrong_log_pass = []
-    dslam_change = []
-    dslams = load_dslams()
-    arguments = [(host, DEVNULL) for host in dslams]
+    arguments = [(ip, DEVNULL) for ip in dslams_ip]
     with ThreadPoolExecutor(max_workers=Settings.threads) as executor:
-        results = executor.map(test_username, arguments)    
+        results = executor.map(check_device_type, arguments)    
     
+    dslams = []
     for result in results:
         if result is None:
             continue
-        if result[0] != '':
-            dslam_unavailable.append(result[0])
-        elif result[1] != '':
-            dslam_wrong_log_pass.append(result[1])
-        elif result[2] != '':
-            dslam_change.append(result[2])
+        dslams.append((result[0], result[1]))
+        #print(result[0], result[1])
     
-    print('Добавлен User - {}: {}'.format(len(dslam_change), ', '.join(dslam_change)))
-    print('Не проходит стандартный log/pass - {}: {}'.format(len(dslam_wrong_log_pass), ', '.join(dslam_wrong_log_pass)))
-    print('Не доступные DSLAM - {}: {}'.format(len(dslam_unavailable), ', '.join(dslam_unavailable)))
+    print('Доступно DSLAM: {}'.format(len(dslams)))
+    
+    with open('resources{}dslams.db'.format(os.sep), 'bw') as file_dump:
+            pickle.dump(dslams, file_dump)    
+    
 
 if __name__ == '__main__':
     cur_dir = os.sep.join(os.path.abspath(__file__).split(os.sep)[:-1])
