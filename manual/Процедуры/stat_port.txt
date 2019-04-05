@@ -1,0 +1,15 @@
+SELECT
+ hostname 'Hostname',
+ board 'Board',
+ port 'Port',
+ MIN(max_dw_rate) 'Мин. вх. скор.',
+ MAX(max_dw_rate) 'Макс. вх. скор.',
+ ROUND(AVG(max_dw_rate)) 'Сред. вх. скор.',
+ CAST(datetime AS DATE) 'Дата'
+FROM data_dsl
+WHERE
+ hostname = in_hostname
+ AND board=in_board
+ AND port=in_port
+GROUP BY CAST(datetime AS DATE)
+ORDER BY datetime

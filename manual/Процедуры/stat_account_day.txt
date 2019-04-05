@@ -1,0 +1,22 @@
+SELECT
+ ao.account_name 'Учетное имя',
+ dd.hostname 'Hostname',
+ dd.board 'Board',
+ dd.port 'Port',
+ dd.max_up_rate 'Макс. исх. скор.',
+ dd.max_dw_rate 'Макс. вх. скор.',
+ dd.up_rate 'Исх. скор.',
+ dd.dw_rate 'Вх. скор.',
+ dd.up_att 'Исх. затух.',
+ dd.dw_att 'Вх. затух.',
+ dd.up_snr 'Исх. SNR',
+ dd.dw_snr 'Вх. SNR',
+ dd.datetime 'Дата/Время'
+FROM abon_onyma ao INNER JOIN data_dsl dd
+ ON ao.hostname=dd.hostname
+ AND ao.board=dd.board
+ AND ao.port=dd.port
+WHERE
+ CAST(dd.datetime AS DATE) > DATE_ADD(CURRENT_DATE(), INTERVAL -day_count DAY)
+ AND ao.account_name = account
+ORDER BY dd.datetime

@@ -1,0 +1,17 @@
+SELECT
+ ao.account_name 'Учетное имя',
+ ao.hostname 'Hostname',
+ ao.board 'Board',
+ ao.port 'Port',
+ MIN(dd.max_dw_rate) 'Мин. вх. скор.',
+ MAX(dd.max_dw_rate) 'Макс. вх. скор.',
+ ROUND(AVG(dd.max_dw_rate)) 'Сред. вх. скор.',
+ CAST(dd.datetime AS DATE) 'Дата'
+FROM abon_onyma ao INNER JOIN data_dsl dd
+ ON ao.hostname=dd.hostname
+ AND ao.board=dd.board
+ AND ao.port=dd.port
+WHERE
+ ao.account_name = account
+GROUP BY CAST(dd.datetime AS DATE)
+ORDER BY dd.datetime

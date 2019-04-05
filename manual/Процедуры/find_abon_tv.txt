@@ -1,0 +1,29 @@
+SELECT
+ aa.phone_number 'Номер тел.',
+ aa.locality 'Нас. пункт',
+ aa.street 'Улица',
+ aa.house_number 'Дом',
+ aa.apartment_number '№ кв.',
+ ao.mobile_phone_number 'Сот. тел.',
+ MIN(dd.max_dw_rate) 'Мин. вх. скор.',
+ MAX(dd.max_dw_rate) 'Макс. вх. скор.',
+ ao.hostname 'Hostname',
+ ao.board 'Board',
+ ao.port 'Port' 
+FROM (
+ SELECT * 
+ FROM data_dsl
+ WHERE datetime >= DATE_ADD(CURRENT_DATE(), INTERVAL -7 DAY) 
+ AND max_dw_rate IS NOT NULL
+ ) dd INNER JOIN abon_onyma ao
+ ON ao.hostname=dd.hostname
+ AND ao.board=dd.board
+ AND ao.port=dd.port
+ INNER JOIN abon_argus aa
+  ON ao.phone_number=aa.phone_number
+WHERE
+ ao.tv = 'no'
+ AND aa.locality LIKE CONCAT('%', locality, '%')
+GROUP BY ao.phone_number
+HAVING MIN(dd.max_dw_rate) > speed
+ORDER BY aa.street, CAST(aa.house_number AS SIGNED)

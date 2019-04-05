@@ -1,0 +1,20 @@
+SELECT
+ hostname 'Hostname',
+ board 'Board',
+ port 'Port',
+ max_up_rate 'Макс. исх. скор.',
+ max_dw_rate 'Макс. вх. скор.',
+ up_rate 'Исх. скор.',
+ dw_rate 'Вх. скор.',
+ up_att 'Исх. затух.',
+ dw_att 'Вх. затух.',
+ up_snr 'Исх. SNR',
+ dw_snr 'Вх. SNR',
+ datetime 'Дата/Время'
+FROM data_dsl
+WHERE
+ CAST(datetime AS DATE) > DATE_ADD(CURRENT_DATE(), INTERVAL -day_count DAY)
+ AND hostname = in_hostname
+ AND board = in_board
+ AND port = in_port
+ORDER BY datetime

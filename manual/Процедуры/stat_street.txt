@@ -1,0 +1,27 @@
+SELECT
+ aa.locality 'Нас. пункт',
+ aa.street 'Улица',
+ aa.house_number 'Дом',
+ aa.apartment_number '№ кв.',
+ aa.phone_number 'Номер тел.',
+ ROUND(AVG(dd.max_up_rate)) 'Ср. исх. скор.',
+ ROUND(AVG(dd.max_dw_rate)) 'Ср. вх. скор.',
+ ao.tariff_name 'Тарифф'
+FROM (
+ SELECT * 
+ FROM data_dsl
+ WHERE CAST(datetime AS DATE) > DATE_ADD(CURRENT_DATE(), INTERVAL -day_count DAY)
+ ) dd INNER JOIN abon_onyma ao
+ ON dd.hostname=ao.hostname
+ AND dd.board=ao.board
+ AND dd.port=ao.port
+ INNER JOIN abon_argus aa
+  ON ao.phone_number=aa.phone_number
+WHERE
+ aa.locality LIKE CONCAT('%', locality, '%')
+ AND aa.street LIKE CONCAT('%', street, '%')
+GROUP BY aa.phone_number
+HAVING
+ AVG(dd.max_up_rate) IS NOT NULL
+ AND AVG(dd.max_dw_rate) IS NOT NULL
+ORDER BY CAST(aa.house_number AS SIGNED), aa.apartment_number
