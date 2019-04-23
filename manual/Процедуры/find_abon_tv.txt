@@ -1,10 +1,12 @@
 SELECT
  aa.phone_number 'Номер тел.',
  aa.locality 'Нас. пункт',
+ ao.name 'ФИО',
  aa.street 'Улица',
  aa.house_number 'Дом',
  aa.apartment_number '№ кв.',
  ao.mobile_phone_number 'Сот. тел.',
+ ao.tariff_name 'Тариф',
  MIN(dd.max_dw_rate) 'Мин. вх. скор.',
  MAX(dd.max_dw_rate) 'Макс. вх. скор.',
  ao.hostname 'Hostname',
