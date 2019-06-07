@@ -102,6 +102,7 @@ sudo nano /etc/mysql/my.cnf
 2. в конце файла дописываем строки
 [mysqld]
 sql_mode="NO_ENGINE_SUBSTITUTION"
+innodb_buffer_pool_size=2G
 3. сохраняем файл и restart mysql
 sudo systemctl restart mysql
 
