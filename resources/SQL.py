@@ -225,7 +225,7 @@ def modify_table_many(cursor, command, param):
         result = cursor.executemany(command, param)
     except Exception as ex:
         print(ex)
-    finally:
+    else:
         cursor.execute('commit')
         return result         
 
