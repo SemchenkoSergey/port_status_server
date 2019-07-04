@@ -200,6 +200,9 @@ def parsing_update_abon_onyma(files):
         with open(file,  encoding='windows-1251') as f:
             reader = csv.reader((line.replace('\0','') for line in f), delimiter=';')
             for row in reader:
+                if len(row) < 7:
+                    print(row)
+                    continue
                 if not re_dslam.search(row[6]):
                     continue
                 account_name = row[5]
