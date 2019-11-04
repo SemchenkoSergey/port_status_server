@@ -264,7 +264,7 @@ def parsing_make_abon_argus(file_list):
     #
     connect = MySQLdb.connect(host=Settings.db_host, user=Settings.db_user, password=Settings.db_password, db=Settings.db_name, charset='utf8')
     cursor = connect.cursor()
-    models = ['Huawei MA 5616', 'Huawei MA 5600']
+    models = ['Huawei MA5616', 'Huawei MA5600']
     
     # Подготовка регулярного выражения
     re_phone = re.compile(r'\((\d+)\)(.+)')         # Код, телефон

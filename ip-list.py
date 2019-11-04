@@ -34,7 +34,7 @@ def get_dslams_ip(files):
                 ip = row[6].replace('=', '').replace('"', '')
                 if ip == '':
                     continue
-                if (model == 'Huawei MA 5616') or (model == 'Huawei MA 5600'):
+                if (model == 'Huawei MA5616') or (model == 'Huawei MA5600'):
                     dslams_ip.append(ip)
     return dslams_ip
 
@@ -52,6 +52,7 @@ def test_dslam(ip, out):
     if response == 0:
         return True
     else:
+        print('{} не доступен'.format(ip))
         return False
 
 def connect_dslam(ip):
@@ -59,6 +60,7 @@ def connect_dslam(ip):
     try:
         dslam = DslamHuawei.DslamHuawei(ip, Settings.login, Settings.password, 20)
     except:
+        print('Не удалось создать объект: {}'.format(ip))
         return None
     else:
         return dslam
@@ -79,6 +81,7 @@ def check_device_type(arguments):
     elif device_type == '5616':
         return (ip, '5616')
     else:
+        print('Не удалось определить тип: {}'.format(ip))
         return None
     
 
