@@ -62,6 +62,7 @@ def create_abon_onyma(drop=False):
         phone_number CHAR(10),
         mobile_phone_number CHAR(11),
         contract VARCHAR(20),
+        nls VARCHAR(20),
         servis_point VARCHAR(100),
         address VARCHAR(500),
         name VARCHAR(500),
